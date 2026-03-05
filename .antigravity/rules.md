@@ -34,5 +34,5 @@ When the user asks to "ship this," "create a PR," or "save my work," you must fo
    - Summarize all testing in the `walkthrough.md`.
 
 ## Error Handling
-- If `gh pr create` fails due to auth, stop and ask user to run `gh auth login`.
+- If `gh` commands fail due to auth, first check if the `.github_token` file exists in the root of the project. If it does, run the command with `$env:GH_TOKEN=$(cat .github_token);` prepended. If it still fails, stop and ask the user.
 - If there are merge conflicts, **stop** and ask the user for guidance.

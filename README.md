@@ -70,18 +70,18 @@ Follow these instructions to get the project running on your local machine.
 
 ## 📝 Roadmap / Future Features
 
-* **Multi-User / Live Tasting Sessions:** Allow multiple people to access, join, and comment on a particular tasting session concurrently. (From Discussion #63)
-* **Granular Tasting Impressions & Tags:** Separate "Nose," "Palate," and "Finish" into individual input fields and introduce a tagging system for flavors. (From Discussion #62)
-* **Infinity Bottle:** Logic to track a living blend of whiskies.
-* **Stats Engine:** Advanced analytics (Cost per dram, favorite regions).
-* **Data Export:** Export collection to CSV/Excel.
-* **Global Ratings:** Refactor static whiskey ratings to be an average of all tasting session scores.
-* **Automated Unit Testing:** Add a test suite (xUnit or NUnit) to verify business logic and prevent regressions.
-* **Social Features:** Allow users to share their collections and tasting notes with friends.
-* **Admin Dashboard:** Add an admin dashboard to manage users and collections.
-* **Mobile App:** Add a mobile app to access the collection.
-* **API:** Add an API to access the collection.
-* **Clean Build Warnings:** Fix all build warnings.
+* **Multi-User / Live Tasting Sessions:** Allow multiple people to access, join, and comment on a particular tasting session concurrently. ([Issue #69](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/69), From Discussion #63)
+* **Granular Tasting Impressions & Tags:** Separate "Nose," "Palate," and "Finish" into individual input fields and introduce a tagging system for flavors. ([Issue #77](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/77), From Discussion #62)
+* **Infinity Bottle:** Logic to track a living blend of whiskies. ([#78](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/78))
+* **Stats Engine:** Advanced analytics (Cost per dram, favorite regions). ([#79](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/79))
+* **Data Export:** Export collection to CSV/Excel. ([#80](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/80))
+* **Global Ratings:** Refactor static whiskey ratings to be an average of all tasting session scores. ([#81](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/81))
+* **Automated Unit Testing:** Add a test suite (xUnit or NUnit) to verify business logic and prevent regressions. ([#82](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/82))
+* **Social Features:** Allow users to share their collections and tasting notes with friends. ([#83](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/83))
+* **Admin Dashboard:** Add an admin dashboard to manage users and collections. ([#84](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/84))
+* **Mobile App:** Add a mobile app to access the collection. ([#85](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/85))
+* **API:** Add an API to access the collection. ([#86](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/86))
+* **Clean Build Warnings:** Fix all build warnings. ([#87](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/87))
 
 ## 🤝 Contributing
 

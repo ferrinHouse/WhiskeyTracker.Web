@@ -25,6 +25,8 @@ project.nuget.cache
 Thumbs.db
 
 # --- Secrets & Local Config (CRITICAL) ---
+# GitHub Private Token
+.github_token
 # Ignore all SSH keys
 whiskey_key
 whiskey_key.pub
