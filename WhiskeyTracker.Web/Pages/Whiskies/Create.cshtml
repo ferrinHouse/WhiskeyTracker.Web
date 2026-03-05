@@ -28,6 +28,11 @@
                     <input asp-for="NewWhiskey.Region" class="form-control" placeholder="e.g. Speyside" />
                 </div>
 
+                <div class="form-group mb-3">
+                    <label asp-for="NewWhiskey.Type" class="form-label">Type</label>
+                    <input asp-for="NewWhiskey.Type" class="form-control" placeholder="e.g. Single Malt" />
+                </div>
+
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label asp-for="NewWhiskey.Age" class="form-label"></label>
@@ -44,6 +49,12 @@
                 <div class="form-group mb-3">
                     <label asp-for="NewWhiskey.CaskType" class="form-label"></label>
                     <input asp-for="NewWhiskey.CaskType" class="form-control" placeholder="e.g. Sherry Oak" />
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="NewWhiskey.GeneralNotes" class="form-label">General Notes</label>
+                    <textarea asp-for="NewWhiskey.GeneralNotes" class="form-control" rows="5" placeholder="Your overall thoughts, flavor profile summary, etc."></textarea>
+                    <span asp-validation-for="NewWhiskey.GeneralNotes" class="text-danger"></span>
                 </div>
 
                 <div class="form-group mb-3">
