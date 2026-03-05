@@ -70,6 +70,8 @@ Follow these instructions to get the project running on your local machine.
 
 ## 📝 Roadmap / Future Features
 
+* **Multi-User / Live Tasting Sessions:** Allow multiple people to access, join, and comment on a particular tasting session concurrently. (From Discussion #63)
+* **Granular Tasting Impressions & Tags:** Separate "Nose," "Palate," and "Finish" into individual input fields and introduce a tagging system for flavors. (From Discussion #62)
 * **Infinity Bottle:** Logic to track a living blend of whiskies.
 * **Stats Engine:** Advanced analytics (Cost per dram, favorite regions).
 * **Data Export:** Export collection to CSV/Excel.
