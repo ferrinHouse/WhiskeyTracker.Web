@@ -82,6 +82,41 @@ jobs:
     - name: Apply Infrastructure
       run: kubectl apply -k k8s/
 
+    - name: Check for Pending Migrations
+      id: check_migrations
+      run: |
+        # Get latest from DB
+        DB_MIGRATION=$(kubectl exec deployment/postgres -- psql -U postgres -d whiskey_prod -t -c "SELECT \"MigrationId\" FROM \"__EFMigrationsHistory\" ORDER BY \"MigrationId\" DESC LIMIT 1;" | xargs)
+        
+        # Get latest from code
+        LOCAL_MIGRATION=$(find WhiskeyTracker.Web/Migrations -name "[0-9]*.cs" | sort | tail -n 1 | xargs basename -s .cs)
+        
+        echo "Database latest: $DB_MIGRATION"
+        echo "Local code latest: $LOCAL_MIGRATION"
+        
+        if [ "$DB_MIGRATION" != "$LOCAL_MIGRATION" ]; then
+          echo "HAS_NEW_MIGRATIONS=true" >> $GITHUB_ENV
+          echo "New migration detected: $LOCAL_MIGRATION"
+        else
+          echo "HAS_NEW_MIGRATIONS=false" >> $GITHUB_ENV
+          echo "No new migrations found."
+        fi
+      continue-on-error: true
+
+    - name: Backup Database
+      if: env.HAS_NEW_MIGRATIONS == 'true'
+      run: |
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        echo "Streaming backup from DB pod to App PVC (/app/backups)..."
+        # Ensure directory exists on PVC
+        kubectl exec content-loader -- mkdir -p /app/backups
+        # Stream pg_dump through runner into PVC
+        kubectl exec deployment/postgres -- pg_dump -U postgres whiskey_prod | \
+          kubectl exec -i content-loader -- sh -c "cat > /app/backups/whiskey_prod_$TIMESTAMP.sql"
+        # Keep last 7 days of backups on PVC
+        kubectl exec content-loader -- find /app/backups -name "*.sql" -mtime +7 -delete
+      continue-on-error: true
+
     - name: Start Loader Pod
       run: |
         cat <<EOF | kubectl apply -f -
@@ -108,8 +143,8 @@ jobs:
 
     - name: Copy Files to NFS
       run: |
-        # Clear existing files (optional, but safer to avoid stale DLLs)
-        kubectl exec content-loader -- rm -rf /app/*
+        # Clear existing files EXCEPT the backups directory
+        kubectl exec content-loader -- find /app -mindepth 1 -maxdepth 1 ! -name 'backups' -exec rm -rf {} +
         
         # Copy new files
         kubectl cp ./publish/. content-loader:/app/

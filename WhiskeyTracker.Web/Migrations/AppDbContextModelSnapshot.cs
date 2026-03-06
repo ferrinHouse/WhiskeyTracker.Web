@@ -489,7 +489,6 @@ namespace WhiskeyTracker.Web.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("CaskType")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 

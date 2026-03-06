@@ -30,7 +30,7 @@ public class Whiskey
 
     [MaxLength(100)]
     [Display(Name = "Cask Type")]
-    public string CaskType { get; set; } = string.Empty;
+    public string? CaskType { get; set; }
 
     public string? ImageFileName { get; set; }
 

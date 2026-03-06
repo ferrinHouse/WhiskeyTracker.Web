@@ -109,6 +109,33 @@ public class WhiskiesTests : TestBase
     }
 
     [Fact]
+    public async Task Create_WorksWithoutCaskType_AndRedirects()
+    {
+        using var context = GetInMemoryContext();
+
+        // Mock the Environment
+        var mockEnv = new Mock<IWebHostEnvironment>();
+        mockEnv.Setup(m => m.WebRootPath).Returns(Path.GetTempPath());
+
+        var pageModel = new CreateModel(context, mockEnv.Object)
+        {
+            NewWhiskey = new Whiskey 
+            { 
+                Name = "No Cask Whiskey",
+                Distillery = "Test Distillery",
+                CaskType = null // Explicitly null
+            }
+        };
+
+        var result = await pageModel.OnPostAsync();
+
+        Assert.IsType<RedirectToPageResult>(result);
+        var whiskey = await context.Whiskies.FirstAsync();
+        Assert.Equal("No Cask Whiskey", whiskey.Name);
+        Assert.Null(whiskey.CaskType);
+    }
+
+    [Fact]
     public void Create_OnGet_ReturnsPage()
     {
         using var context = GetInMemoryContext();
