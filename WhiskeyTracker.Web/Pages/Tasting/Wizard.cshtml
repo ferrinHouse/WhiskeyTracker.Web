@@ -62,9 +62,9 @@
                         <hr />
 
                         <div class="mb-3">
-                            <label asp-for="NewNote.PourAmountMl" class="form-label">Pour Amount (ml)</label>
-                            <input asp-for="NewNote.PourAmountMl" class="form-control" />
-                            <span asp-validation-for="NewNote.PourAmountMl" class="text-danger"></span>
+                            <label asp-for="PourAmountOz" class="form-label">Pour Amount (oz)</label>
+                            <input asp-for="PourAmountOz" class="form-control" type="number" step="0.1" placeholder="e.g. 1.5" />
+                            <span asp-validation-for="PourAmountOz" class="text-danger"></span>
                         </div>
 
                         <div class="mb-3">
