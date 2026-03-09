@@ -86,6 +86,11 @@ public class WizardModel : PageModel
 
                 if (NewNote.PourAmountMl > 0)
                 {
+                    if (bottle.Status == BottleStatus.Full)
+                    {
+                        bottle.Status = BottleStatus.Opened;
+                    }
+
                     bottle.CurrentVolumeMl -= NewNote.PourAmountMl;
                     if (bottle.CurrentVolumeMl <= 0) bottle.CurrentVolumeMl = 0;
                     if (bottle.CurrentVolumeMl == 0)
