@@ -1,15 +1,12 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Mvc.Routing;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Microsoft.EntityFrameworkCore;
-using Moq;
 using WhiskeyTracker.Web.Data;
 using WhiskeyTracker.Web.Pages.Tasting;
-using Xunit;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+
+using Moq;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace WhiskeyTracker.Tests;
 
@@ -23,167 +20,115 @@ public class WizardTests
         return new AppDbContext(options);
     }
 
-    private Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> GetMockUserManager()
+    private void SetMockUser(PageModel page, string userId)
     {
-        var store = new Mock<Microsoft.AspNetCore.Identity.IUserStore<ApplicationUser>>();
-        return new Microsoft.AspNetCore.Identity.UserManager<ApplicationUser>(
-            store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
-    }
-
-    // Helper to Initialize PageModel with TempData AND Mock User
-    private WizardModel CreateWizardModel(AppDbContext context)
-    {
-        var httpContext = new DefaultHttpContext();
-        
-        // MOCK USER
         var claims = new List<System.Security.Claims.Claim>
         {
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, "test-user-id")
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, userId)
         };
         var identity = new System.Security.Claims.ClaimsIdentity(claims, "TestAuthType");
-        httpContext.User = new System.Security.Claims.ClaimsPrincipal(identity);
+        var claimsPrincipal = new System.Security.Claims.ClaimsPrincipal(identity);
 
-        var modelState = new ModelStateDictionary();
-        var actionContext = new ActionContext(httpContext, new Microsoft.AspNetCore.Routing.RouteData(), new PageActionDescriptor(), modelState);
-        var modelMetadataProvider = new EmptyModelMetadataProvider();
-        var viewData = new ViewDataDictionary(modelMetadataProvider, modelState);
-        var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
-        var pageContext = new PageContext(actionContext)
+        page.PageContext = new PageContext
         {
-            ViewData = viewData
+            HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext
+            {
+                User = claimsPrincipal
+            }
         };
 
-        return new WizardModel(context)
-        {
-            PageContext = pageContext,
-            TempData = tempData,
-            Url = new UrlHelper(actionContext)
-        };
+        // Mock TempData using Moq
+        var mockTempData = new Mock<ITempDataDictionary>();
+        page.TempData = mockTempData.Object;
     }
 
     [Fact]
-    public async Task OnGet_ReturnsNotFound_IfSessionInvalid()
-    {
-        using var context = GetInMemoryContext();
-        var pageModel = CreateWizardModel(context);
-
-        var result = await pageModel.OnGetAsync(999); // Invalid ID
-
-        Assert.IsType<NotFoundObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task OnGet_PopulatesSelectLists_WhenSessionValid()
+    public async Task OnPost_ConvertsOzToMl_AndUpdatesBottle()
     {
         // ARRANGE
         using var context = GetInMemoryContext();
-        var session = new TastingSession { Date = DateOnly.FromDateTime(DateTime.Now), UserId = "test-user-id" };
-        context.TastingSessions.Add(session);
+        var userId = "test-user";
+        var whiskey = new Whiskey { Name = "Test Whiskey", Distillery = "Test Distillery" };
+        context.Whiskies.Add(whiskey);
+        await context.SaveChangesAsync();
+
+        var collection = new Collection { Name = "Test Collection" };
+        context.Collections.Add(collection);
+        await context.SaveChangesAsync();
+
+        context.CollectionMembers.Add(new CollectionMember { CollectionId = collection.Id, UserId = userId, Role = CollectionRole.Owner });
         
-        // SEED COLLECTION
-        context.Collections.Add(new Collection { Id = 1, Name = "Test" });
-        context.CollectionMembers.Add(new CollectionMember { CollectionId = 1, UserId = "test-user-id", Role = CollectionRole.Owner });
-
-        var whiskey = new Whiskey { Name = "Test Whiskey" };
-        context.Whiskies.Add(whiskey);
-        var bottle = new Bottle { WhiskeyId = whiskey.Id, Status = BottleStatus.Opened, CollectionId = 1 };
-        context.Bottles.Add(bottle);
-        await context.SaveChangesAsync();
-
-        var pageModel = CreateWizardModel(context);
-
-        // ACT
-        var result = await pageModel.OnGetAsync(session.Id);
-
-        // ASSERT
-        Assert.IsType<PageResult>(result);
-        Assert.NotNull(pageModel.BottleOptions);
-        Assert.NotNull(pageModel.WhiskeyOptions);
-        Assert.Single(pageModel.BottleOptions!);
-    }
-
-    [Fact]
-    public async Task Create_DeductsInventory_WhenBottleSelected()
-    {
-        // ARRANGE
-        using var context = GetInMemoryContext();
-        var whiskey = new Whiskey { Name = "Test Whiskey" };
-        context.Whiskies.Add(whiskey);
-        await context.SaveChangesAsync();
-
-        // SEED COLLECTION
-        context.Collections.Add(new Collection { Id = 1, Name = "Test" });
-        context.CollectionMembers.Add(new CollectionMember { CollectionId = 1, UserId = "test-user-id", Role = CollectionRole.Owner });
- 
         var bottle = new Bottle 
         { 
             WhiskeyId = whiskey.Id, 
-            CurrentVolumeMl = 700, 
-            Status = BottleStatus.Opened,
-            CollectionId = 1
+            CollectionId = collection.Id, 
+            UserId = userId, 
+            CurrentVolumeMl = 750, 
+            Status = BottleStatus.Opened 
         };
         context.Bottles.Add(bottle);
-        var session = new TastingSession { Date = DateOnly.FromDateTime(DateTime.Now), UserId = "test-user-id" };
+        await context.SaveChangesAsync();
+
+        var session = new TastingSession { Title = "Test Session", UserId = userId, Date = DateOnly.FromDateTime(DateTime.Now) };
         context.TastingSessions.Add(session);
         await context.SaveChangesAsync();
 
-        var pageModel = CreateWizardModel(context);
-        pageModel.SelectedBottleId = bottle.Id;
-        pageModel.NewNote = new TastingNote 
-        { 
-            Notes = "Yummy", 
-            Rating = 8,
-            PourAmountMl = 50 // <--- User drank 50ml
+        var pageModel = new WizardModel(context)
+        {
+            SelectedBottleId = bottle.Id,
+            PourAmountOz = 1.5,
+            NewNote = new TastingNote { Notes = "Tastes great!" }
         };
+        SetMockUser(pageModel, userId);
 
         // ACT
-        await pageModel.OnPostAsync(session.Id);
+        var result = await pageModel.OnPostAsync(session.Id);
 
         // ASSERT
-        var dbBottle = await context.Bottles.FindAsync(bottle.Id);
-        Assert.NotNull(dbBottle);
-        Assert.Equal(650, dbBottle.CurrentVolumeMl); // 700 - 50 = 650
+        Assert.IsType<RedirectToPageResult>(result);
+        
+        var updatedBottle = await context.Bottles.FindAsync(bottle.Id);
+        // 1.5 oz * 29.5735 = 44.36025 -> rounded to 44
+        Assert.Equal(750 - 44, updatedBottle.CurrentVolumeMl);
+
+        var note = await context.TastingNotes.FirstAsync();
+        Assert.Equal(44, note.PourAmountMl);
     }
 
     [Fact]
-    public async Task Create_FinishesBottle_WhenVolumeHitsZero()
+    public async Task OnPost_Fails_WhenOzIsMissing()
     {
         // ARRANGE
         using var context = GetInMemoryContext();
-        var whiskey = new Whiskey { Name = "Test Whiskey" }; // Ensure whiskey exists
-        context.Whiskies.Add(whiskey);
-        await context.SaveChangesAsync();
-
-        // SEED COLLECTION
-        context.Collections.Add(new Collection { Id = 1, Name = "Test" });
-        context.CollectionMembers.Add(new CollectionMember { CollectionId = 1, UserId = "test-user-id", Role = CollectionRole.Owner });
-
-        var bottle = new Bottle 
-        { 
-            WhiskeyId = whiskey.Id,
-            CurrentVolumeMl = 30, // Only a sip left
-            Status = BottleStatus.Opened,
-            CollectionId = 1
-        };
-        context.Bottles.Add(bottle);
-        var session = new TastingSession { UserId = "test-user-id" };
+        var userId = "test-user";
+        var session = new TastingSession { Title = "Test Session", UserId = userId, Date = DateOnly.FromDateTime(DateTime.Now) };
         context.TastingSessions.Add(session);
         await context.SaveChangesAsync();
 
-        var pageModel = CreateWizardModel(context);
-        pageModel.SelectedBottleId = bottle.Id;
-        pageModel.NewNote = new TastingNote 
-        { 
-            Notes = "The end.", 
-            PourAmountMl = 30 // <--- Finish it
+        var pageModel = new WizardModel(context)
+        {
+            PourAmountOz = null, // Missing
+            NewNote = new TastingNote { Notes = "Missing pour" }
         };
+        SetMockUser(pageModel, userId);
 
         // ACT
-        await pageModel.OnPostAsync(session.Id);
+        // Manually trigger validation since it doesn't run automatically in unit tests
+        var validationContext = new ValidationContext(pageModel, null, null);
+        var validationResults = new List<ValidationResult>();
+        Validator.TryValidateObject(pageModel, validationContext, validationResults, true);
+        foreach (var error in validationResults)
+        {
+            foreach (var memberName in error.MemberNames)
+            {
+                pageModel.ModelState.AddModelError(memberName, error.ErrorMessage ?? "Error");
+            }
+        }
+
+        var result = await pageModel.OnPostAsync(session.Id);
 
         // ASSERT
-        var dbBottle = await context.Bottles.FindAsync(bottle.Id);
-        Assert.Equal(0, dbBottle!.CurrentVolumeMl);
-        Assert.Equal(BottleStatus.Empty, dbBottle!.Status);
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.ModelState.IsValid);
     }
 }

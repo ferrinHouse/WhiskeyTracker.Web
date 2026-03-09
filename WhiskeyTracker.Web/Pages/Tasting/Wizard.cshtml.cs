@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -21,6 +22,11 @@ public class WizardModel : PageModel
     
     [BindProperty]
     public TastingNote NewNote { get; set; } = new();
+
+    [BindProperty]
+    [Display(Name = "Pour Amount (oz)")]
+    [Range(0.1, 25.0, ErrorMessage = "Please enter a valid pour amount between 0.1 and 25 oz.")]
+    public double? PourAmountOz { get; set; }
 
     [BindProperty]
     public int? SelectedBottleId { get; set; }
@@ -72,6 +78,12 @@ public class WizardModel : PageModel
                 NewNote.WhiskeyId = bottle.WhiskeyId;
                 NewNote.BottleId = bottle.Id;
 
+                // Conversion: 1 oz = 29.5735 ml
+                if (PourAmountOz.HasValue && PourAmountOz.Value > 0)
+                {
+                    NewNote.PourAmountMl = (int)Math.Round(PourAmountOz.Value * 29.5735);
+                }
+
                 if (NewNote.PourAmountMl > 0)
                 {
                     bottle.CurrentVolumeMl -= NewNote.PourAmountMl;
@@ -92,6 +104,11 @@ public class WizardModel : PageModel
         {
             NewNote.WhiskeyId = SelectedWhiskeyId.Value;
             NewNote.BottleId = null;
+
+            if (PourAmountOz.HasValue && PourAmountOz.Value > 0)
+            {
+                NewNote.PourAmountMl = (int)Math.Round(PourAmountOz.Value * 29.5735);
+            }
         }
         else
         {
@@ -159,10 +176,11 @@ public class WizardModel : PageModel
         BottleOptions = new SelectList(bottles.Select(b =>
         {
             var whiskeyName = b.Whiskey != null ? b.Whiskey.Name : "Unknown Bottle";
+            var distillery = b.Whiskey != null ? b.Whiskey.Distillery : "Unknown";
 
             return new {
             b.Id,
-            Text = $"{whiskeyName} ({b.Status})"
+            Text = $"{distillery} - {whiskeyName} ({b.Status})"
             };
         }), "Id", "Text");
 
