@@ -47,6 +47,8 @@ public class Bottle
 
     [Range(0, 5000)]
     public int CapacityMl { get; set; } = 750; // Default to 750ml
+
+    [Range(0, 5000)]
     public int CurrentVolumeMl { get; set; } = 750; // Default to full bottle
     public bool IsInfinityBottle { get; set; } = false;
 

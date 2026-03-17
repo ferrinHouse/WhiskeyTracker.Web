@@ -94,7 +94,7 @@
                             <div class="col-md-3">
                                 <div class="form-group mb-3">
                                     <label asp-for="NewBottle.CurrentVolumeMl" class="control-label">Current (ml)</label>
-                                    <input asp-for="NewBottle.CurrentVolumeMl" class="form-control" />
+                                    <input asp-for="NewBottle.CurrentVolumeMl" class="form-control" min="0" />
                                     <span asp-validation-for="NewBottle.CurrentVolumeMl" class="text-danger"></span>
                                 </div>
                             </div>
