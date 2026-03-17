@@ -58,12 +58,13 @@ else
         <tbody>
             @foreach (var item in Model.Whiskies)
             {
-                <tr>
+                <tr style="cursor: pointer;" onclick="if(!event.target.closest('a, button, img')) { window.location.href='@Url.Page("./Details", new { id = item.Id })'; }">
                     <td style="width: 100px;">
                         @if (!string.IsNullOrEmpty(item.ImageFileName))
                         {
                             <img src="~/images/@item.ImageFileName" alt="Bottle of @item.Name" class="img-thumbnail"
-                                style="max-height: 80px;" />
+                                style="max-height: 80px; cursor: pointer;" 
+                                data-bs-toggle="modal" data-bs-target="#imageModal" data-image-src="/images/@item.ImageFileName" />
                         }
                         else
                         {
@@ -77,9 +78,76 @@ else
                         <a asp-page="./Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
                         <a asp-page="./Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
                         <a asp-page="./Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">View</a>
+                        <a asp-page="./AddBottle" asp-route-id="@item.Id" class="btn btn-sm btn-success">+ Bottle</a>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+}
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center pt-0">
+                <img id="previewImage" src="" alt="Whiskey Preview" class="img-fluid rounded shadow-sm" style="max-height: 80vh;" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["PromptAddBottle"] != null)
+{
+    var newWhiskeyId = TempData["NewWhiskeyId"];
+    <!-- Add Bottle Prompt Modal -->
+    <div class="modal fade" id="addBottlePromptModal" tabindex="-1" aria-labelledby="addBottlePromptModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="addBottlePromptModalLabel"><i class="bi bi-check-circle me-2"></i>Whiskey Created!</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body fs-5 text-center py-4">
+                    You've successfully added this whiskey to the library. <br/><br/>
+                    Would you like to add a bottle of it to your collection now?
+                </div>
+                <div class="modal-footer justify-content-center border-0 pb-4">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Later</button>
+                    <a href="@Url.Page("./AddBottle", new { id = newWhiskeyId })" class="btn btn-primary px-4">Yes, Add Bottle</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var imageModal = document.getElementById('imageModal');
+            imageModal.addEventListener('show.bs.modal', function (event) {
+                // Button that triggered the modal (in this case, the image itself)
+                var button = event.relatedTarget;
+                // Extract info from data-image-src attributes
+                var imageUrl = button.getAttribute('data-image-src');
+                var altText = button.getAttribute('alt');
+                
+                // Update the modal's content.
+                var modalImg = imageModal.querySelector('#previewImage');
+                modalImg.src = imageUrl;
+                modalImg.alt = altText;
+            });
+
+            @if (TempData["PromptAddBottle"] != null)
+            {
+                <text>
+                var addBottleModal = new bootstrap.Modal(document.getElementById('addBottlePromptModal'));
+                addBottleModal.show();
+                </text>
+            }
+        });
+    </script>
 }
