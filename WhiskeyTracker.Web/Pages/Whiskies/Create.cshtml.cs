@@ -60,6 +60,12 @@ public class CreateModel : PageModel
         _context.Whiskies.Add(NewWhiskey);
         await _context.SaveChangesAsync();
 
+        if (TempData != null)
+        {
+            TempData["PromptAddBottle"] = true;
+            TempData["NewWhiskeyId"] = NewWhiskey.Id;
+        }
+
         // For now, redirect back to the home page after saving
         return RedirectToPage("/Whiskies/Index");
     }
