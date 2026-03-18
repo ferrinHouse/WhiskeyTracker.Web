@@ -45,12 +45,16 @@ spec:
               memory: "512Mi"
               cpu: "500m"
           env:
-            - name: POSTGRES_DB
-              value: whiskey_prod
-            - name: POSTGRES_USER
-              value: postgres
-            - name: POSTGRES_PASSWORD
-              valueFrom:
+          - name: POSTGRES_INITDB_ARGS
+            value: "--auth-host=scram-sha-256"
+          - name: PGOPTIONS
+            value: "-c log_statement=all -c log_destination=stderr"
+          - name: POSTGRES_DB
+            value: whiskey_prod
+          - name: POSTGRES_USER
+            value: postgres
+          - name: POSTGRES_PASSWORD
+            valueFrom:
                 secretKeyRef:
                   name: whiskey-secrets
                   key: db-password

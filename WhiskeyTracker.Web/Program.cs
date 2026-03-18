@@ -8,6 +8,18 @@ using WhiskeyTracker.Web.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole(); // Keep the console provider
+builder.Logging.AddJsonConsole(options =>
+{
+    options.IncludeScopes = true;
+    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
+    options.JsonWriterOptions = new System.Text.Json.JsonWriterOptions 
+    { 
+        Indented = false // Crucial: K8s logs are best as single-line JSON
+    };
+});
+
 // FIX: Increase KeepAlive to prevent 502s from Nginx/Cloudflare
 builder.WebHost.ConfigureKestrel(options =>
 {
