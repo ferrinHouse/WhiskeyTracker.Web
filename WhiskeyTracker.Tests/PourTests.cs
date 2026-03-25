@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using WhiskeyTracker.Web.Data;
 using WhiskeyTracker.Web.Pages.Whiskies;
 using Xunit;
@@ -169,5 +172,141 @@ public class PourTests
         Assert.NotNull(dbSource);
         Assert.Equal(0, dbSource.CurrentVolumeMl);
         Assert.Equal(BottleStatus.Empty, dbSource.Status);
+    }
+}
+
+public class QuickPourTests
+{
+    private AppDbContext GetInMemoryContext()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        return new AppDbContext(options);
+    }
+
+    private void SetMockUser(PageModel page, string userId)
+    {
+        var claims = new List<System.Security.Claims.Claim>
+        {
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, userId)
+        };
+        var identity = new System.Security.Claims.ClaimsIdentity(claims, "TestAuthType");
+        var claimsPrincipal = new System.Security.Claims.ClaimsPrincipal(identity);
+        page.PageContext = new PageContext
+        {
+            HttpContext = new DefaultHttpContext { User = claimsPrincipal }
+        };
+        page.TempData = new Mock<ITempDataDictionary>().Object;
+    }
+
+    private async Task<(Bottle bottle, Whiskey whiskey)> SeedBottle(AppDbContext context,
+        int volumeMl = 750, BottleStatus status = BottleStatus.Opened)
+    {
+        var whiskey = new Whiskey { Name = "Test Whiskey", Distillery = "Test Distillery" };
+        context.Whiskies.Add(whiskey);
+        await context.SaveChangesAsync();
+
+        var collection = new Collection { Name = "Test Bar" };
+        context.Collections.Add(collection);
+        await context.SaveChangesAsync();
+
+        context.CollectionMembers.Add(new CollectionMember
+        {
+            CollectionId = collection.Id, UserId = "test-user", Role = CollectionRole.Owner
+        });
+
+        var bottle = new Bottle
+        {
+            WhiskeyId = whiskey.Id,
+            CollectionId = collection.Id,
+            CapacityMl = 750,
+            CurrentVolumeMl = volumeMl,
+            Status = status
+        };
+        context.Bottles.Add(bottle);
+        await context.SaveChangesAsync();
+
+        return (bottle, whiskey);
+    }
+
+    [Fact]
+    public async Task OnPost_DeductsVolume_AndRedirects()
+    {
+        using var context = GetInMemoryContext();
+        var (bottle, whiskey) = await SeedBottle(context, volumeMl: 750, status: BottleStatus.Opened);
+
+        var page = new QuickPourModel(context) { PourAmountOz = 2.0 };
+        SetMockUser(page, "test-user");
+
+        var result = await page.OnPostAsync(bottle.Id);
+
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./Details", redirect.PageName);
+
+        var db = await context.Bottles.AsNoTracking().FirstAsync(b => b.Id == bottle.Id);
+        // 2 oz * 29.5735 = 59ml rounded
+        Assert.Equal(750 - 59, db.CurrentVolumeMl);
+        Assert.Equal(BottleStatus.Opened, db.Status);
+    }
+
+    [Fact]
+    public async Task OnPost_OpensFull_BottleOnFirstPour()
+    {
+        using var context = GetInMemoryContext();
+        var (bottle, _) = await SeedBottle(context, volumeMl: 750, status: BottleStatus.Full);
+
+        var page = new QuickPourModel(context) { PourAmountOz = 1.5 };
+        SetMockUser(page, "test-user");
+
+        await page.OnPostAsync(bottle.Id);
+
+        var db = await context.Bottles.AsNoTracking().FirstAsync(b => b.Id == bottle.Id);
+        Assert.Equal(BottleStatus.Opened, db.Status);
+    }
+
+    [Fact]
+    public async Task OnPost_MarksBottleEmpty_WhenVolumeReachesZero()
+    {
+        using var context = GetInMemoryContext();
+        var (bottle, _) = await SeedBottle(context, volumeMl: 30, status: BottleStatus.Opened);
+
+        var page = new QuickPourModel(context) { PourAmountOz = 2.0 }; // 59ml > 30ml remaining
+        SetMockUser(page, "test-user");
+
+        await page.OnPostAsync(bottle.Id);
+
+        var db = await context.Bottles.AsNoTracking().FirstAsync(b => b.Id == bottle.Id);
+        Assert.Equal(0, db.CurrentVolumeMl);
+        Assert.Equal(BottleStatus.Empty, db.Status);
+    }
+
+    [Fact]
+    public async Task OnGet_ReturnsNotFound_WhenUserLacksAccess()
+    {
+        using var context = GetInMemoryContext();
+        var (bottle, _) = await SeedBottle(context);
+
+        var page = new QuickPourModel(context);
+        SetMockUser(page, "other-user"); // different user
+
+        var result = await page.OnGetAsync(bottle.Id);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task OnGet_RedirectsToDetails_ForEmptyBottle()
+    {
+        using var context = GetInMemoryContext();
+        var (bottle, whiskey) = await SeedBottle(context, volumeMl: 0, status: BottleStatus.Empty);
+
+        var page = new QuickPourModel(context);
+        SetMockUser(page, "test-user");
+
+        var result = await page.OnGetAsync(bottle.Id);
+
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./Details", redirect.PageName);
     }
 }

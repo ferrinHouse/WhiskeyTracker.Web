@@ -130,7 +130,7 @@
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <a asp-page="./EditBottle" asp-route-id="@bottle.Id" class="btn btn-outline-primary" title="Edit Bottle">Edit</a>
-                                        
+
                                         @if (bottle.IsInfinityBottle)
                                         {
                                             <a asp-page="/Bottles/Infinity" asp-route-id="@bottle.Id" class="btn btn-info text-white" title="View Blend Composition">
@@ -138,11 +138,18 @@
                                             </a>
                                         }
 
+                                        @if (bottle.Status != WhiskeyTracker.Web.Data.BottleStatus.Empty)
+                                        {
+                                            <a asp-page="./QuickPour" asp-route-id="@bottle.Id" class="btn btn-success" title="Log a Quick Pour">
+                                                🥃 Pour
+                                            </a>
+                                        }
+
                                         @if (bottle.Status == WhiskeyTracker.Web.Data.BottleStatus.Opened && !bottle.IsInfinityBottle)
                                         {
                                             @if (bottle.CurrentVolumeMl <= 150)
                                             {
-                                                <a asp-page="./Pour" asp-route-id="@bottle.Id" class="btn btn-success" title="Finish into Infinity Bottle">
+                                                <a asp-page="./Pour" asp-route-id="@bottle.Id" class="btn btn-warning text-dark" title="Finish into Infinity Bottle">
                                                     ♾️ Finish
                                                 </a>
                                             }
