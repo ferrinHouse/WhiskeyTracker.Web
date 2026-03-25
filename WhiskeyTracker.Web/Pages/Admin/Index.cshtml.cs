@@ -21,18 +21,10 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var usersTask = _context.Users.CountAsync();
-        var whiskiesTask = _context.Whiskies.CountAsync();
-        var bottlesTask = _context.Bottles.CountAsync();
-        var collectionsTask = _context.Collections.CountAsync();
-        var notesTask = _context.TastingNotes.CountAsync();
-
-        await Task.WhenAll(usersTask, whiskiesTask, bottlesTask, collectionsTask, notesTask);
-
-        TotalUsers = usersTask.Result;
-        TotalWhiskies = whiskiesTask.Result;
-        TotalBottles = bottlesTask.Result;
-        TotalCollections = collectionsTask.Result;
-        TotalTastingNotes = notesTask.Result;
+        TotalUsers = await _context.Users.CountAsync();
+        TotalWhiskies = await _context.Whiskies.CountAsync();
+        TotalBottles = await _context.Bottles.CountAsync();
+        TotalCollections = await _context.Collections.CountAsync();
+        TotalTastingNotes = await _context.TastingNotes.CountAsync();
     }
 }
