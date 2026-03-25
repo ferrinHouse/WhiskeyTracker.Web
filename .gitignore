@@ -12,6 +12,7 @@ TestResults/
 *.userosscache
 *.sln.docstates
 *.code-workspace
+*.claude/
 
 # --- NuGet ---
 *.nupkg
