@@ -33,7 +33,7 @@
     <div class="row g-4 justify-content-center">
         <!-- Users -->
         <div class="col-md-4 col-lg-3">
-            <a asp-page="/Admin/Users" class="card h-100 shadow-sm border-0 bg-light admin-card text-center">
+            <a asp-page="/Admin/Users" class="card h-100 shadow-sm border-0 bg-body-tertiary admin-card text-center">
                 <div class="card-body">
                     <h6 class="card-subtitle mb-2 text-muted text-uppercase">Users</h6>
                     <h2 class="card-title mb-0 text-primary">@Model.TotalUsers</h2>
@@ -43,17 +43,17 @@
 
         <!-- Whiskies (Redirects to Library for now as there is no specific Admin/Whiskies) -->
         <div class="col-md-4 col-lg-3">
-            <a asp-page="/Whiskies/Index" class="card h-100 shadow-sm border-0 bg-light admin-card text-center">
+            <a asp-page="/Whiskies/Index" class="card h-100 shadow-sm border-0 bg-body-tertiary admin-card text-center">
                 <div class="card-body">
                     <h6 class="card-subtitle mb-2 text-muted text-uppercase">Whiskies</h6>
-                    <h2 class="card-title mb-0 text-dark">@Model.TotalWhiskies</h2>
+                    <h2 class="card-title mb-0 text-body">@Model.TotalWhiskies</h2>
                 </div>
             </a>
         </div>
 
         <!-- Bottles -->
         <div class="col-md-4 col-lg-3">
-            <a asp-page="/Admin/Bottles" class="card h-100 shadow-sm border-0 bg-light admin-card text-center">
+            <a asp-page="/Admin/Bottles" class="card h-100 shadow-sm border-0 bg-body-tertiary admin-card text-center">
                 <div class="card-body">
                     <h6 class="card-subtitle mb-2 text-muted text-uppercase">Bottles</h6>
                     <h2 class="card-title mb-0 text-success">@Model.TotalBottles</h2>
@@ -63,7 +63,7 @@
 
         <!-- Collections -->
         <div class="col-md-4 col-lg-3">
-            <a asp-page="/Admin/Collections" class="card h-100 shadow-sm border-0 bg-light admin-card text-center">
+            <a asp-page="/Admin/Collections" class="card h-100 shadow-sm border-0 bg-body-tertiary admin-card text-center">
                 <div class="card-body">
                     <h6 class="card-subtitle mb-2 text-muted text-uppercase">Collections</h6>
                     <h2 class="card-title mb-0 text-info">@Model.TotalCollections</h2>
@@ -73,7 +73,7 @@
 
         <!-- Tasting Notes -->
         <div class="col-md-4 col-lg-3">
-            <div class="card h-100 shadow-sm border-0 bg-light text-center py-4">
+            <div class="card h-100 shadow-sm border-0 bg-body-tertiary text-center py-4">
                 <div class="card-body">
                     <h6 class="card-subtitle mb-2 text-muted text-uppercase">Tasting Notes</h6>
                     <h2 class="card-title mb-0 text-warning">@Model.TotalTastingNotes</h2>
@@ -83,7 +83,7 @@
 
         <!-- Tags -->
         <div class="col-md-4 col-lg-3">
-            <a asp-page="/Admin/Tags" class="card h-100 shadow-sm border-0 @(Model.PendingTagsCount > 0 ? "bg-warning-subtle border-warning" : "bg-light") admin-card text-center">
+            <a asp-page="/Admin/Tags" class="card h-100 shadow-sm border-0 @(Model.PendingTagsCount > 0 ? "bg-warning-subtle border-warning" : "bg-body-tertiary") admin-card text-center">
                 <div class="card-body">
                     <h6 class="card-subtitle mb-2 text-muted text-uppercase">Managed Tags</h6>
                     <h2 class="card-title mb-0 text-secondary">@Model.TotalTags</h2>
@@ -97,7 +97,7 @@
 
         <!-- Orphaned Records -->
         <div class="col-md-4 col-lg-3">
-            <a asp-page="/Admin/Maintenance" class="card h-100 shadow-sm border-0 @(Model.OrphanedRecords > 0 ? "bg-warning-subtle border-warning" : "bg-light") admin-card text-center">
+            <a asp-page="/Admin/Maintenance" class="card h-100 shadow-sm border-0 @(Model.OrphanedRecords > 0 ? "bg-warning-subtle border-warning" : "bg-body-tertiary") admin-card text-center">
                 <div class="card-body">
                     <h6 class="card-subtitle mb-2 text-muted text-uppercase">Health Issues</h6>
                     <h2 class="card-title mb-0 @(Model.OrphanedRecords > 0 ? "text-danger" : "text-muted")">@Model.OrphanedRecords</h2>

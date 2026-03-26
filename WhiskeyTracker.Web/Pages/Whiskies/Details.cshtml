@@ -18,7 +18,7 @@
             }
 
             <div class="d-grid gap-2">
-                <a asp-page="./Edit" asp-route-id="@Model.Whiskey.Id" class="btn btn-warning">Edit Definition</a>
+                <a asp-page="./Edit" asp-route-id="@Model.Whiskey.Id" class="btn btn-outline-warning">Edit Definition</a>
                 <a asp-page="./Index" class="btn btn-outline-secondary">Back to Library</a>
             </div>
         </div>
@@ -46,7 +46,7 @@
                 <dd class="col-sm-8">@Model.Whiskey.CaskType</dd>
             </dl>
 
-            <div class="d-flex justify-content-between align-items-center mt-5 mb-3 bg-light p-2 rounded">
+            <div class="d-flex justify-content-between align-items-center mt-5 mb-3 bg-body-tertiary p-2 rounded">
                 <h3 class="h5 m-0">Inventory History</h3>
                 <a asp-page="./AddBottle" asp-route-id="@Model.Whiskey.Id" class="btn btn-sm btn-success">
                     + Add Bottle
@@ -82,11 +82,11 @@
                                     }
                                     else if (bottle.Status == WhiskeyTracker.Web.Data.BottleStatus.Opened)
                                     {
-                                        <span class="badge bg-warning text-dark">Opened</span>
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Opened</span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-success">Full</span>
+                                        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Full</span>
                                     }
                                 </td>
                                 
@@ -114,7 +114,7 @@
                                 <td>
                                     @if(bottle.Purchaser != null)
                                     {
-                                        <span title="@bottle.Purchaser.Email" class="badge bg-light text-dark border">
+                                        <span title="@bottle.Purchaser.Email" class="badge bg-body-secondary text-body border">
                                             @(string.IsNullOrEmpty(bottle.Purchaser.DisplayName) ? bottle.Purchaser.UserName : bottle.Purchaser.DisplayName)
                                         </span>
                                     }
@@ -149,7 +149,7 @@
                                         {
                                             @if (bottle.CurrentVolumeMl <= 150)
                                             {
-                                                <a asp-page="./Pour" asp-route-id="@bottle.Id" class="btn btn-warning text-dark" title="Finish into Infinity Bottle">
+                                                <a asp-page="./Pour" asp-route-id="@bottle.Id" class="btn btn-outline-warning" title="Finish into Infinity Bottle">
                                                     ♾️ Finish
                                                 </a>
                                             }
@@ -170,16 +170,16 @@
 
             @if (!string.IsNullOrWhiteSpace(Model.Whiskey.GeneralNotes))
             {
-                <div class="mt-4 mb-4 p-4 bg-light rounded border">
+                <div class="mt-4 mb-4 p-4 bg-body-tertiary rounded border">
                     <h3 class="h5 mb-3">General Notes</h3>
                     <p style="white-space: pre-wrap;">@Model.Whiskey.GeneralNotes</p>
                 </div>
             }
 
             <div class="mt-5">
-                <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded">
+                <div class="d-flex justify-content-between align-items-center mb-3 bg-body-tertiary p-2 rounded">
                     <h3 class="h5 m-0">Tasting Journal</h3>
-                    <span class="badge bg-primary">
+                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
                         @if (Model.Whiskey.TastingNotes.Any())
                         {
                             <span>Avg: @Model.Whiskey.TastingNotes.Average(n => n.Rating).ToString("0.0") ★</span>
@@ -209,13 +209,13 @@
                                 @if (note.Bottle != null)
                                 {
                                     <div class="mb-2">
-                                        <small class="badge bg-light text-dark border">
+                                        <small class="badge bg-body-secondary text-body border">
                                             <i class="bi bi-box-seam"></i> From Bottle purchased
                                             @(note.Bottle.PurchaseDate?.ToShortDateString() ?? "Unknown")
                                         </small>
                                         @if(note.PourAmountMl > 0)
                                         {
-                                            <small class="badge bg-light text-dark border ms-1">
+                                            <small class="badge bg-body-secondary text-body border ms-1">
                                                 🥃 @note.PourAmountMl ml
                                             </small>
                                         }
@@ -223,7 +223,7 @@
                                 }
 
                                 <div class="mb-2">
-                                    <span class="text-warning">
+                                    <span class="text-warning opacity-75">
                                         @for (int i = 0; i < note.Rating; i++)
                                         {
                                             <span>★</span>
@@ -240,7 +240,7 @@
                                                 <small class="text-muted fw-bold me-1">@group.Key:</small>
                                                 @foreach(var tg in group)
                                                 {
-                                                    <span class="badge rounded-pill bg-light text-dark border me-1">@tg.Tag.Name</span>
+                                                    <span class="badge rounded-pill bg-body-secondary text-body border me-1">@tg.Tag.Name</span>
                                                 }
                                             </div>
                                         }

@@ -19,7 +19,7 @@
             @if (!string.IsNullOrEmpty(Model.Session.JoinCode))
             {
                 <div class="mt-1 small fw-bold text-primary">
-                    <i class="bi bi-people-fill me-1"></i> Join Code: <span class="bg-primary text-white px-2 py-0 rounded">@Model.Session.JoinCode</span>
+                    <i class="bi bi-people-fill me-1"></i> Join Code: <span class="bg-primary-subtle text-primary-emphasis px-2 py-0 rounded border border-primary-subtle">@Model.Session.JoinCode</span>
                 </div>
             }
         </div>
@@ -37,7 +37,7 @@
             
             @if (!Model.Session.Notes.Any())
             {
-                <div class="alert alert-light border p-4 text-center">
+                <div class="alert alert-secondary border p-4 text-center">
                     <p class="mb-0 text-muted">No notes recorded for this session yet.</p>
                 </div>
             }
@@ -45,14 +45,14 @@
             {
                 @foreach (var note in Model.Session.Notes.OrderBy(n => n.OrderIndex))
                 {
-                    <div class="card mb-3 shadow-sm border-0 bg-light">
+                    <div class="card mb-3 shadow-sm border-0 bg-body-tertiary">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <h5 class="card-title fw-bold">
                                     <span class="badge bg-secondary rounded-pill me-2">#@note.OrderIndex</span>
                                     @note.Whiskey.Name
                                 </h5>
-                                <div class="text-warning">
+                                <div class="text-warning opacity-75">
                                     @for (int i = 0; i < note.Rating; i++)
                                     {
                                         <span>★</span>
@@ -70,7 +70,7 @@
 
                             @if (!string.IsNullOrEmpty(note.Notes))
                             {
-                                <div class="p-3 bg-white rounded border-start border-4 border-primary">
+                                <div class="p-3 bg-body rounded border-start border-4 border-primary-subtle">
                                     <p class="mb-0 fst-italic">"@note.Notes"</p>
                                 </div>
                             }
@@ -85,7 +85,7 @@
         </div>
         
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm bg-primary text-white mb-4">
+            <div class="card border-primary-subtle shadow-sm bg-primary-subtle text-primary-emphasis mb-4">
                 <div class="card-body p-4">
                     <h5 class="fw-bold mb-3">Session Stats</h5>
                     <div class="d-flex justify-content-between mb-2">
@@ -108,12 +108,12 @@
                     <div class="card-body">
                         <h6 class="fw-bold mb-3 border-bottom pb-2 text-uppercase small text-muted">Participants</h6>
                         <div class="d-flex flex-wrap gap-2">
-                            <span class="badge rounded-pill bg-primary border" title="Session Owner">
+                            <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle" title="Session Owner">
                                 <i class="bi bi-person-fill"></i> @(Model.Session.User?.DisplayName ?? Model.Session.User?.UserName ?? "Driver")
                             </span>
                             @foreach (var p in Model.Session.Participants)
                             {
-                                <span class="badge rounded-pill bg-light text-dark border shadow-sm">
+                                <span class="badge rounded-pill bg-body-secondary text-body border shadow-sm">
                                     <i class="bi bi-person-fill text-primary"></i> @(p.User?.DisplayName ?? p.User?.UserName ?? "Friend")
                                 </span>
                             }

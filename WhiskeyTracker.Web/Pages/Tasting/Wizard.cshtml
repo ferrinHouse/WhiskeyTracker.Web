@@ -10,15 +10,16 @@
     .tag-pill {
         display: inline-flex;
         align-items: center;
-        background-color: #f1f3f5;
-        border: 1px solid #dee2e6;
+        background-color: var(--bs-secondary-bg);
+        color: var(--bs-body-color);
+        border: 1px solid var(--bs-border-color);
         border-radius: 50px;
         padding: 0.2rem 0.6rem;
         font-size: 0.85rem;
         transition: all 0.2s ease;
     }
     .tag-pill:hover {
-        background-color: #e9ecef;
+        background-color: var(--bs-tertiary-bg);
     }
     .tag-pill .btn-close {
         font-size: 0.5rem;
@@ -39,7 +40,7 @@
             @if (!string.IsNullOrEmpty(Model.Session.JoinCode))
             {
                 <div class="mt-2 text-primary fw-bold" style="letter-spacing: 0.1rem;">
-                    <i class="bi bi-people-fill me-1"></i> Join Code: <span class="bg-primary text-white px-2 py-1 rounded">@Model.Session.JoinCode</span>
+                    <i class="bi bi-people-fill me-1"></i> Join Code: <span class="bg-primary-subtle text-primary-emphasis px-2 py-1 rounded border border-primary-subtle">@Model.Session.JoinCode</span>
                     <small class="text-muted ms-2 fw-normal">(Share this with your friends)</small>
                 </div>
             }
@@ -47,12 +48,12 @@
         <div class="col-md-4 text-end">
             <div id="participants-list" class="d-flex justify-content-end gap-1 mb-2">
                 @* Always show owner/driver *@
-                <span class="badge rounded-pill bg-primary text-white border shadow-sm" title="Session Owner">
+                <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle shadow-sm" title="Session Owner">
                     <i class="bi bi-person-fill"></i> Driver
                 </span>
                 @foreach (var p in Model.Session.Participants)
                 {
-                    <span class="badge rounded-pill bg-light text-dark border shadow-sm" title="Joined at @p.JoinedAt.ToLocalTime().ToShortTimeString()">
+                    <span class="badge rounded-pill bg-body-secondary text-body border shadow-sm" title="Joined at @p.JoinedAt.ToLocalTime().ToShortTimeString()">
                         <i class="bi bi-person-fill text-primary"></i> @(p.User.DisplayName ?? p.User.UserName)
                     </span>
                 }
@@ -64,8 +65,8 @@
 
     <div class="row">
         <div class="col-md-5">
-            <div class="card border-primary shadow-sm">
-                <div class="card-header bg-primary text-white">
+            <div class="card border-primary-subtle shadow-sm">
+                <div class="card-header bg-primary-subtle text-primary-emphasis">
                     <h5 class="m-0" id="card-header-title">Pour #@(Model.Session.Notes.Count + 1)</h5>
                 </div>
                 <div class="card-body">
@@ -90,9 +91,9 @@
                             </div>
                         }
 
-                        <div id="bottle-section" class="mb-3 p-2 bg-light border rounded">
+                        <div id="bottle-section" class="mb-3 p-2 bg-body-tertiary border rounded">
                             <label class="form-label fw-bold text-success">Option A: Pour from Inventory</label>
-                            <select asp-for="SelectedBottleId" class="form-select" asp-items="Model.BottleOptions">
+                            <select asp-for="SelectedBottleId" class="form-select bg-body text-body" asp-items="Model.BottleOptions">
                                 <option value="">-- Select from Shelf --</option>
                             </select>
                             <span asp-validation-for="SelectedBottleId" class="text-danger"></span>
@@ -101,9 +102,9 @@
 
                         <div id="or-divider" class="text-center mb-3 fw-bold text-muted">- OR -</div>
 
-                        <div id="whiskey-section" class="mb-4 p-2 bg-light border rounded">
+                        <div id="whiskey-section" class="mb-4 p-2 bg-body-tertiary border rounded">
                             <label class="form-label fw-bold text-primary">Option B: Select Whiskey</label>
-                            <select asp-for="SelectedWhiskeyId" class="form-select" asp-items="Model.WhiskeyOptions">
+                            <select asp-for="SelectedWhiskeyId" class="form-select bg-body text-body" asp-items="Model.WhiskeyOptions">
                                 <option value="">-- Select Whiskey --</option>
                             </select>
                             <span asp-validation-for="SelectedWhiskeyId" class="text-danger"></span>
@@ -181,7 +182,7 @@
             <h4 class="mb-3">Tonight's Lineup</h4>
             @if (Model.Session.Notes.Count == 0)
             {
-                <div class="alert alert-light border text-center p-4">
+                <div class="alert alert-secondary border text-center p-4">
                     <p class="mb-0 text-muted">Nothing tasted yet. Pour the first dram!</p>
                 </div>
             }
@@ -211,7 +212,7 @@
                                     {
                                         <small class="text-muted">@(Math.Round(note.PourAmountMl / 29.5735, 1)) oz</small>
                                     }
-                                    <small class="text-warning">
+                                    <small class="text-warning opacity-75">
                                         @for (int k = 0; k < note.Rating; k++)
                                         {
                                             <span>★</span>
@@ -230,7 +231,7 @@
                                             <small class="text-muted fw-bold me-1">@group.Key:</small>
                                             @foreach(var tg in group)
                                             {
-                                                <span class="badge rounded-pill bg-light text-dark border me-1">@tg.Tag.Name</span>
+                                                <span class="badge rounded-pill bg-body-secondary text-body border me-1">@tg.Tag.Name</span>
                                             }
                                         </div>
                                     }
@@ -461,7 +462,7 @@
         connection.on("ParticipantJoined", function (userName) {
             // Update the UI list immediately
             if ($('#participants-list').length) {
-                const badge = $('<span class="badge rounded-pill bg-info text-dark border shadow-sm ms-1 animated pulse"><i class="bi bi-person-plus-fill"></i> ' + userName + '</span>');
+                const badge = $('<span class="badge rounded-pill bg-info text-body border shadow-sm ms-1 animated pulse"><i class="bi bi-person-plus-fill"></i> ' + userName + '</span>');
                 $('#participants-list').append(badge);
             }
             showToast('Participant Joined', `${userName} joined the session!`, 'bi-person-plus-fill', 'primary');

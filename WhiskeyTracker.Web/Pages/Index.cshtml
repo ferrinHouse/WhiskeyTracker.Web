@@ -19,7 +19,7 @@
         <div class="row g-2 text-center">
             <div class="col-4">
                 <a asp-page="/Whiskies/Index" asp-route-ShowOnlyMyCollection="true" class="text-decoration-none">
-                    <div class="p-3 border bg-light rounded shadow-sm hover-shadow transition-all">
+                    <div class="p-3 border bg-body-tertiary rounded shadow-sm hover-shadow transition-all">
                         <h2 class="fw-bold text-primary mb-0">@Model.TotalWhiskies</h2>
                         <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Expressions</small>
                     </div>
@@ -27,7 +27,7 @@
             </div>
             <div class="col-4">
                 <a asp-page="/Whiskies/Index" asp-route-ShowOnlyMyCollection="true" asp-route-Status="Opened" class="text-decoration-none">
-                    <div class="p-3 border bg-light rounded shadow-sm hover-shadow transition-all">
+                    <div class="p-3 border bg-body-tertiary rounded shadow-sm hover-shadow transition-all">
                         <h2 class="fw-bold text-success mb-0">@Model.OpenBottles</h2>
                         <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Open Bottles</small>
                     </div>
@@ -35,7 +35,7 @@
             </div>
             <div class="col-4">
                 <a asp-page="/Tasting/Index" class="text-decoration-none">
-                    <div class="p-3 border bg-light rounded shadow-sm hover-shadow transition-all">
+                    <div class="p-3 border bg-body-tertiary rounded shadow-sm hover-shadow transition-all">
                         <h2 class="fw-bold text-warning mb-0">@Model.TotalSessions</h2>
                         <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Sessions</small>
                     </div>
@@ -47,27 +47,28 @@
 
 <div class="row justify-content-center">
     <div class="col-md-4 mb-4">
-        <div class="card h-100 shadow border-primary hover-shadow transition-all">
-            <div class="card-body text-center p-5">
+        <div class="card h-100 shadow border-primary-subtle transition-all">
+            <div class="card-body text-center p-5 d-flex flex-column">
                 <h2 class="card-title text-primary mb-3">🥃 Tasting Session</h2>
                 <p class="card-text mb-4">
                     Pouring a dram? Start a guided session to record your notes and ratings in real-time.
                 </p> 
-                <div class="d-grid">
+                <div class="d-grid gap-2 mt-auto">
                     <a asp-page="/Tasting/Create" class="btn btn-primary btn-lg">Start New Session</a>
+                    <button type="button" class="btn btn-outline-primary btn-lg" data-bs-toggle="modal" data-bs-target="#joinSessionModal">Join a Session</button>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="col-md-4 mb-4">
-        <div class="card h-100 shadow border-secondary hover-shadow transition-all">
-            <div class="card-body text-center p-5">
+        <div class="card h-100 shadow border-secondary transition-all">
+            <div class="card-body text-center p-5 d-flex flex-column">
                 <h2 class="card-title text-secondary mb-3">➕ Log New</h2>
                 <p class="card-text mb-4">
                     Picked up something new? Add it to your database.
                 </p>
-                <div class="d-grid">
+                <div class="d-grid mt-auto">
                     <a asp-page="/Whiskies/Create" class="btn btn-success btn-lg">Add Bottle</a>
                 </div>
             </div>
@@ -75,13 +76,13 @@
     </div>
 
     <div class="col-md-4 mb-4">
-        <div class="card h-100 shadow border-secondary hover-shadow transition-all">
-            <div class="card-body text-center p-5">
+        <div class="card h-100 shadow border-secondary transition-all">
+            <div class="card-body text-center p-5 d-flex flex-column">
                 <h2 class="card-title text-secondary mb-3">📚 My Whiskies</h2>
                 <p class="card-text mb-4">
                     Add new purchases, update inventory status, or browse your existing collection.
                 </p>
-                <div class="d-grid">
+                <div class="d-grid mt-auto">
                     <a asp-page="/Whiskies/Index" class="btn btn-outline-secondary btn-lg">View Collection</a>
                 </div>
             </div>
@@ -107,7 +108,7 @@ else
                         <div class="mt-1">
                             @foreach(var tg in note.TastingNoteTags.Take(3))
                             {
-                                <span class="badge rounded-pill bg-light text-dark border me-1" style="font-size: 0.7rem;">@tg.Tag.Name</span>
+                                <span class="badge rounded-pill bg-body-secondary text-body border me-1" style="font-size: 0.7rem;">@tg.Tag.Name</span>
                             }
                         </div>
                     }
@@ -125,3 +126,28 @@ else
         }
     </div>
 }
+
+<!-- Join Session Modal -->
+<div class="modal fade" id="joinSessionModal" tabindex="-1" aria-labelledby="joinSessionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary-subtle text-primary-emphasis border-bottom border-primary-subtle">
+                <h5 class="modal-title" id="joinSessionModalLabel">Join Tasting Session</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page="/Tasting/Index" asp-page-handler="Join">
+                <div class="modal-body p-4">
+                    <p class="text-muted mb-4">Enter the 6-character code shared by the session driver to participate in the live tasting.</p>
+                    <div class="form-floating mb-3">
+                        <input name="joinCode" type="text" class="form-control fw-bold text-center" id="joinCode" placeholder="ABCDEF" required maxlength="10" style="letter-spacing: 0.2rem; font-size: 1.5rem; text-transform: uppercase;">
+                        <label for="joinCode">Session Join Code</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-3">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4">Join Session</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

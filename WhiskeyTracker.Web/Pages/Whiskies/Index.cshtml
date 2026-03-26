@@ -12,20 +12,20 @@
     </a>
 </div>
 
-<form class="row g-3 mb-4 p-3 bg-light rounded shadow-sm" method="get">
+<form class="row g-3 mb-4 p-3 bg-body-tertiary rounded shadow-sm" method="get">
     <div class="col-md-4">
         <label class="form-label fw-bold small text-muted">Search</label>
-        <input type="text" asp-for="SearchString" class="form-control" placeholder="Distiller or Name..." />
+        <input type="text" asp-for="SearchString" class="form-control bg-body text-body" placeholder="Distiller or Name..." />
     </div>
     <div class="col-md-3">
         <label class="form-label fw-bold small text-muted">Region</label>
-        <select asp-for="WhiskeyRegion" asp-items="Model.Regions" class="form-select">
+        <select asp-for="WhiskeyRegion" asp-items="Model.Regions" class="form-select bg-body text-body">
             <option value="">All Regions</option>
         </select>
     </div>
     <div class="col-md-3">
         <label class="form-label fw-bold small text-muted">Bottle Status</label>
-        <select asp-for="Status" asp-items="Html.GetEnumSelectList<WhiskeyTracker.Web.Data.BottleStatus>()" class="form-select">
+        <select asp-for="Status" asp-items="Html.GetEnumSelectList<WhiskeyTracker.Web.Data.BottleStatus>()" class="form-select bg-body text-body">
             <option value="">Any Status</option>
         </select>
     </div>
@@ -89,10 +89,9 @@ else
                     <td>@item.Name</td>
                     <td>@item.Region</td>
                     <td>
-                        <a asp-page="./Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
-                        <a asp-page="./Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
-                        <a asp-page="./Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">View</a>
-                        <a asp-page="./AddBottle" asp-route-id="@item.Id" class="btn btn-sm btn-success">+ Bottle</a>
+                        <a asp-page="./Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Edit</a>
+                        <a asp-page="./AddBottle" asp-route-id="@item.Id" class="btn btn-sm btn-outline-success">+ Bottle</a>
+                        <a asp-page="./Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
                     </td>
                 </tr>
             }
@@ -121,7 +120,7 @@ else
     <div class="modal fade" id="addBottlePromptModal" tabindex="-1" aria-labelledby="addBottlePromptModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-success text-white">
+                <div class="modal-header bg-success-subtle text-success-emphasis border-bottom border-success-subtle">
                     <h5 class="modal-title" id="addBottlePromptModalLabel"><i class="bi bi-check-circle me-2"></i>Whiskey Created!</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>

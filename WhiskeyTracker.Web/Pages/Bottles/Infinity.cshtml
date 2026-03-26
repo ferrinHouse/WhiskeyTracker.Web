@@ -63,14 +63,14 @@
                                 <div class="list-group-item">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center">
-                                            <div class="bg-light rounded-circle p-2 me-3 text-center" style="width: 48px; height: 48px;">
+                                            <div class="bg-body-tertiary rounded-circle p-2 me-3 text-center" style="width: 48px; height: 48px;">
                                                 <i class="bi bi-arrow-down-right text-success fs-5"></i>
                                             </div>
                                             <div>
                                                 <h6 class="mb-0">
                                                     @if (component.SourceBottle != null)
                                                     {
-                                                        <a asp-page="/Whiskies/Details" asp-route-id="@component.SourceBottle.WhiskeyId" class="text-decoration-none text-dark">
+                                                        <a asp-page="/Whiskies/Details" asp-route-id="@component.SourceBottle.WhiskeyId" class="text-decoration-none text-body">
                                                             @component.SourceBottle.Whiskey?.Name
                                                         </a>
                                                     }

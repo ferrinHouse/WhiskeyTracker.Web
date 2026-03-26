@@ -28,7 +28,7 @@
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                            <thead class="">
                                 <tr>
                                     <th>User</th>
                                     <th>Email</th>
@@ -44,7 +44,7 @@
                                         </td>
                                         <td>@member.User.Email</td>
                                         <td>
-                                            <span class="badge @(member.Role == WhiskeyTracker.Web.Data.CollectionRole.Owner ? "bg-danger" : member.Role == WhiskeyTracker.Web.Data.CollectionRole.Editor ? "bg-warning text-dark" : "bg-info text-dark")">
+                                            <span class="badge @(member.Role == WhiskeyTracker.Web.Data.CollectionRole.Owner ? "bg-danger" : member.Role == WhiskeyTracker.Web.Data.CollectionRole.Editor ? "bg-warning text-body" : "bg-info text-body")">
                                                 @member.Role
                                             </span>
                                         </td>
@@ -65,7 +65,7 @@
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-hover mb-0">
-                                <thead class="table-light">
+                                <thead class="">
                                     <tr>
                                         <th>Email</th>
                                         <th>Role</th>
@@ -80,7 +80,7 @@
                                             <td>@invite.InviteeEmail</td>
                                             <td>@invite.Role</td>
                                             <td>@invite.CreatedAt.ToLocalTime().ToString("g")</td>
-                                            <td><span class="badge bg-warning text-dark">@invite.Status</span></td>
+                                            <td><span class="badge bg-warning text-body">@invite.Status</span></td>
                                         </tr>
                                     }
                                 </tbody>
@@ -92,7 +92,7 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card shadow-sm border-0 bg-light p-3">
+            <div class="card shadow-sm border-0 bg-body-tertiary p-3">
                 <h5>Statistics</h5>
                 <hr />
                 <p><strong>Total Members:</strong> @Model.Members.Count</p>

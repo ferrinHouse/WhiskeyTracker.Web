@@ -27,7 +27,7 @@
     <div class="card shadow-sm border-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+                <thead>
                     <tr>
                         <th>Collection</th>
                         <th>Owner</th>
@@ -45,7 +45,7 @@
                             </td>
                             <td>@collection.OwnerName</td>
                             <td>
-                                <span class="badge bg-info text-dark">@collection.BottleCount Bottles</span>
+                                <span class="badge bg-info text-body">@collection.BottleCount Bottles</span>
                                 <span class="badge bg-secondary">@collection.MemberCount Members</span>
                             </td>
                             <td class="text-end">
@@ -71,7 +71,7 @@
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                                                 <form method="post" asp-page-handler="DeleteCollection" asp-route-collectionId="@collection.Id">
-                                                    <button type="submit" class="btn btn-danger">Delete Permanently</button>
+                                                    <button type="submit" class="btn btn-outline-danger">Delete Permanently</button>
                                                 </form>
                                             </div>
                                         </div>
