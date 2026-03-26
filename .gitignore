@@ -46,3 +46,4 @@ WhiskeyTracker.Web/wwwroot/images/*
 
 # --- Logs ---
 *.log
+whiskey_prod_backup.sql

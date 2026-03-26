@@ -32,12 +32,33 @@
 </style>
 
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center">
-        <div>
+    <div class="row align-items-center">
+        <div class="col-md-8">
             <h6 class="text-muted text-uppercase mb-1">Current Session</h6>
-            <h2>@Model.Session.Title</h2>
+            <h2 class="mb-0">@Model.Session.Title</h2>
+            @if (!string.IsNullOrEmpty(Model.Session.JoinCode))
+            {
+                <div class="mt-2 text-primary fw-bold" style="letter-spacing: 0.1rem;">
+                    <i class="bi bi-people-fill me-1"></i> Join Code: <span class="bg-primary text-white px-2 py-1 rounded">@Model.Session.JoinCode</span>
+                    <small class="text-muted ms-2 fw-normal">(Share this with your friends)</small>
+                </div>
+            }
         </div>
-        <a asp-page="./Index" class="btn btn-outline-secondary">Finish & Exit</a>
+        <div class="col-md-4 text-end">
+            <div id="participants-list" class="d-flex justify-content-end gap-1 mb-2">
+                @* Always show owner/driver *@
+                <span class="badge rounded-pill bg-primary text-white border shadow-sm" title="Session Owner">
+                    <i class="bi bi-person-fill"></i> Driver
+                </span>
+                @foreach (var p in Model.Session.Participants)
+                {
+                    <span class="badge rounded-pill bg-light text-dark border shadow-sm" title="Joined at @p.JoinedAt.ToLocalTime().ToShortTimeString()">
+                        <i class="bi bi-person-fill text-primary"></i> @(p.User.DisplayName ?? p.User.UserName)
+                    </span>
+                }
+            </div>
+            <a asp-page="./Index" class="btn btn-outline-secondary">Finish & Exit</a>
+        </div>
     </div>
     <hr />
 
@@ -391,5 +412,46 @@
             $('#submit-btn').text('Log & Pour Next').removeClass('btn-success').addClass('btn-primary');
             $('#cancel-edit-btn').addClass('d-none');
         }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script>
+        const sessionId = "@Model.Session.Id";
+        const currentUserId = "@(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)";
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/tastingHub")
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on("WhiskeyAdded", function (whiskeyId) {
+            // Toast notification
+            const toast = $('<div class="toast-container position-fixed bottom-0 end-0 p-3"><div class="toast show align-items-center text-white bg-success border-0" role="alert"><div class="d-flex"><div class="toast-body"><i class="bi bi-info-circle me-2"></i>A new whiskey was added to the session! Refreshing...</div></div></div></div>');
+            $('body').append(toast);
+            setTimeout(() => { location.reload(); }, 2000);
+        });
+
+        connection.on("NoteUpdated", function (noteId) {
+            // Toast notification
+            const toast = $('<div class="toast-container position-fixed bottom-0 end-0 p-3"><div class="toast show align-items-center text-white bg-info border-0" role="alert"><div class="d-flex"><div class="toast-body"><i class="bi bi-pencil-square me-2"></i>A tasting note was updated! Refreshing...</div></div></div></div>');
+            $('body').append(toast);
+            setTimeout(() => { location.reload(); }, 2000);
+        });
+
+        connection.on("ParticipantJoined", function (userName) {
+            const badge = $('<span class="badge rounded-pill bg-info text-dark border shadow-sm ms-1 animated pulse"><i class="bi bi-person-plus-fill"></i> ' + userName + '</span>');
+            $('#participants-list').prepend(badge);
+            
+            // Show a temporary toast for joining
+            const toast = $('<div class="toast-container position-fixed bottom-0 end-0 p-3"><div class="toast show align-items-center text-white bg-info border-0" role="alert"><div class="d-flex"><div class="toast-body"><i class="bi bi-person-plus-fill me-2"></i>' + userName + ' joined the session!</div></div></div></div>');
+            $('body').append(toast);
+            setTimeout(() => { toast.fadeOut('slow', () => toast.remove()); }, 3000);
+        });
+
+        connection.start().then(function () {
+            console.log("SignalR Connected");
+            connection.invoke("JoinSession", sessionId);
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
     </script>
 }

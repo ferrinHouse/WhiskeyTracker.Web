@@ -33,6 +33,7 @@ public class CreateModel : PageModel
         if (!ModelState.IsValid) return Page();
 
         Session.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        Session.JoinCode = Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper();
 
         _context.TastingSessions.Add(Session);
         await _context.SaveChangesAsync();

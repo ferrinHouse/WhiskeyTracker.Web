@@ -5,6 +5,8 @@ using WhiskeyTracker.Web.Pages.Tasting;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using Moq;
+using WhiskeyTracker.Web.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace WhiskeyTracker.Tests;
@@ -41,6 +43,16 @@ public class WizardTests
         page.TempData = mockTempData.Object;
     }
 
+    private Mock<IHubContext<TastingHub>> GetMockHubContext()
+    {
+        var mockHubContext = new Mock<IHubContext<TastingHub>>();
+        var mockClients = new Mock<IHubClients>();
+        var mockClientProxy = new Mock<IClientProxy>();
+        mockHubContext.Setup(h => h.Clients).Returns(mockClients.Object);
+        mockClients.Setup(c => c.Group(It.IsAny<string>())).Returns(mockClientProxy.Object);
+        return mockHubContext;
+    }
+
     [Fact]
     public async Task OnPost_ConvertsOzToMl_AndUpdatesBottle()
     {
@@ -72,7 +84,8 @@ public class WizardTests
         context.TastingSessions.Add(session);
         await context.SaveChangesAsync();
 
-        var pageModel = new WizardModel(context)
+        var hubMock = GetMockHubContext();
+        var pageModel = new WizardModel(context, hubMock.Object)
         {
             SelectedBottleId = bottle.Id,
             PourAmountOz = 1.5,
@@ -126,7 +139,8 @@ public class WizardTests
         context.TastingSessions.Add(session);
         await context.SaveChangesAsync();
 
-        var pageModel = new WizardModel(context)
+        var hubMock = GetMockHubContext();
+        var pageModel = new WizardModel(context, hubMock.Object)
         {
             SelectedBottleId = bottle.Id,
             PourAmountOz = 1.0,
@@ -153,7 +167,8 @@ public class WizardTests
         context.TastingSessions.Add(session);
         await context.SaveChangesAsync();
 
-        var pageModel = new WizardModel(context)
+        var hubMock = GetMockHubContext();
+        var pageModel = new WizardModel(context, hubMock.Object)
         {
             PourAmountOz = null, // Missing
             NewNote = new TastingNote { Notes = "Missing pour" }
@@ -208,7 +223,8 @@ public class WizardTests
         context.TastingNotes.Add(existingNote);
         await context.SaveChangesAsync();
 
-        var pageModel = new WizardModel(context)
+        var hubMock = GetMockHubContext();
+        var pageModel = new WizardModel(context, hubMock.Object)
         {
             EditNoteId = existingNote.Id,
             SelectedBottleId = bottle.Id,
@@ -246,7 +262,8 @@ public class WizardTests
         context.TastingSessions.Add(session);
         await context.SaveChangesAsync();
 
-        var pageModel = new WizardModel(context)
+        var hubMock = GetMockHubContext();
+        var pageModel = new WizardModel(context, hubMock.Object)
         {
             SelectedWhiskeyId = whiskey.Id,
             PourAmountOz = 1.0,

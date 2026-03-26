@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using WhiskeyTracker.Web.Data;
+using WhiskeyTracker.Web.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,6 +90,7 @@ switch (provider?.ToLower())
 }
 
 builder.Services.AddHealthChecks();
+builder.Services.AddSignalR();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders =
@@ -162,5 +164,6 @@ app.UseAuthorization();
 app.MapHealthChecks("/health");
 app.MapControllers();
 app.MapRazorPages();
+app.MapHub<TastingHub>("/tastingHub");
 
 app.Run();
