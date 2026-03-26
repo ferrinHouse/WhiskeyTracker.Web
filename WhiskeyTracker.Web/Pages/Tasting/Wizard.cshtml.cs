@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.VisualBasic;
 using WhiskeyTracker.Web.Data;
 
 namespace WhiskeyTracker.Web.Pages.Tasting;
@@ -39,6 +37,15 @@ public class WizardModel : PageModel
     
     public SelectList BottleOptions { get; set; } = default!;
     public SelectList WhiskeyOptions { get; set; } = default!;
+
+    [BindProperty]
+    public string? NoseTags { get; set; }
+    [BindProperty]
+    public string? PalateTags { get; set; }
+    [BindProperty]
+    public string? FinishTags { get; set; }
+
+    public List<Tag> AvailableTags { get; set; } = new();
 
     // GET: Prepares the page for viewing
     public async Task<IActionResult> OnGetAsync(int sessionId)
@@ -86,6 +93,7 @@ public class WizardModel : PageModel
 
             var note = await _context.TastingNotes
                 .Include(n => n.Bottle)
+                .Include(n => n.TastingNoteTags)
                 .FirstOrDefaultAsync(n => n.Id == EditNoteId.Value && n.TastingSessionId == sessionId);
 
             if (note == null) return NotFound();
@@ -140,6 +148,8 @@ public class WizardModel : PageModel
             note.PourAmountMl = newPourMl;
             note.Rating = NewNote.Rating;
             note.Notes = NewNote.Notes;
+
+            await ProcessTagsAsync(note, userId);
 
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Pour updated!";
@@ -219,6 +229,9 @@ public class WizardModel : PageModel
 
         _context.TastingNotes.Add(NewNote);
         NewNote.UserId = userId;
+        
+        await ProcessTagsAsync(NewNote, userId);
+
         await _context.SaveChangesAsync();
 
         TempData["SuccessMessage"] = "Tasting note added successfully! Ready for the next pour!";
@@ -231,7 +244,10 @@ public class WizardModel : PageModel
     {
         var session = await _context.TastingSessions
             .Include(s => s.Notes)
-            .ThenInclude(n => n.Whiskey) // Include Whiskey so we can see names in the list
+            .ThenInclude(n => n.Whiskey)
+            .Include(s => s.Notes)
+            .ThenInclude(n => n.TastingNoteTags)
+            .ThenInclude(tnt => tnt.Tag)
             .FirstOrDefaultAsync(s => s.Id == sessionId);
 
         if (session != null)
@@ -271,5 +287,53 @@ public class WizardModel : PageModel
             .ToListAsync();
 
         WhiskeyOptions = new SelectList(whiskies, "Id", "Name");
+
+        AvailableTags = await _context.Tags
+            .Where(t => t.IsApproved || t.CreatedByUserId == userId)
+            .OrderBy(t => t.Name)
+            .ToListAsync();
+    }
+
+    private async Task ProcessTagsAsync(TastingNote note, string? userId)
+    {
+        // Clear existing tags if in edit mode (we'll re-add them)
+        if (note.Id > 0)
+        {
+            var existingTags = await _context.TastingNoteTags
+                .Where(tnt => tnt.TastingNoteId == note.Id)
+                .ToListAsync();
+            _context.TastingNoteTags.RemoveRange(existingTags);
+        }
+
+        await AddTagsToNoteAsync(note, NoseTags, TastingField.Nose, userId);
+        await AddTagsToNoteAsync(note, PalateTags, TastingField.Palate, userId);
+        await AddTagsToNoteAsync(note, FinishTags, TastingField.Finish, userId);
+    }
+
+    private async Task AddTagsToNoteAsync(TastingNote note, string? tagsString, TastingField field, string? userId)
+    {
+        if (string.IsNullOrWhiteSpace(tagsString)) return;
+
+        var tagNames = tagsString.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(t => t.ToLower())
+            .Distinct();
+
+        foreach (var tagName in tagNames)
+        {
+            var tag = await _context.Tags.FirstOrDefaultAsync(t => t.Name.ToLower() == tagName);
+            if (tag == null)
+            {
+                tag = new Tag { Name = tagName, IsApproved = false, CreatedByUserId = userId };
+                _context.Tags.Add(tag);
+                await _context.SaveChangesAsync(); // Save to get the Id
+            }
+
+            note.TastingNoteTags.Add(new TastingNoteTag
+            {
+                TastingNoteId = note.Id,
+                TagId = tag.Id,
+                Field = field
+            });
+        }
     }
 }

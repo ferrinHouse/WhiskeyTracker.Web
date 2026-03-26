@@ -4,62 +4,114 @@
     ViewData["Title"] = "Admin Dashboard";
 }
 
+<style>
+    .admin-card {
+        transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+    }
+    .admin-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .admin-card .card-body {
+        padding: 2rem 1rem;
+    }
+    .admin-card h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+    }
+</style>
+
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Admin Dashboard</h1>
-        <div class="btn-group">
-            <a asp-page="/Admin/Users" class="btn btn-outline-primary">Manage Users</a>
-            <a asp-page="/Admin/Collections" class="btn btn-outline-primary">Manage Collections</a>
-            <a asp-page="/Admin/Bottles" class="btn btn-outline-primary">Manage Bottles</a>
-            <a asp-page="/Admin/Maintenance" class="btn btn-outline-warning">Maintenance</a>
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Admin Dashboard</h1>
+        <p class="text-muted">System management and health overview</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        <!-- Users -->
+        <div class="col-md-4 col-lg-3">
+            <a asp-page="/Admin/Users" class="card h-100 shadow-sm border-0 bg-light admin-card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted text-uppercase">Users</h6>
+                    <h2 class="card-title mb-0 text-primary">@Model.TotalUsers</h2>
+                </div>
+            </a>
+        </div>
+
+        <!-- Whiskies (Redirects to Library for now as there is no specific Admin/Whiskies) -->
+        <div class="col-md-4 col-lg-3">
+            <a asp-page="/Whiskies/Index" class="card h-100 shadow-sm border-0 bg-light admin-card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted text-uppercase">Whiskies</h6>
+                    <h2 class="card-title mb-0 text-dark">@Model.TotalWhiskies</h2>
+                </div>
+            </a>
+        </div>
+
+        <!-- Bottles -->
+        <div class="col-md-4 col-lg-3">
+            <a asp-page="/Admin/Bottles" class="card h-100 shadow-sm border-0 bg-light admin-card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted text-uppercase">Bottles</h6>
+                    <h2 class="card-title mb-0 text-success">@Model.TotalBottles</h2>
+                </div>
+            </a>
+        </div>
+
+        <!-- Collections -->
+        <div class="col-md-4 col-lg-3">
+            <a asp-page="/Admin/Collections" class="card h-100 shadow-sm border-0 bg-light admin-card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted text-uppercase">Collections</h6>
+                    <h2 class="card-title mb-0 text-info">@Model.TotalCollections</h2>
+                </div>
+            </a>
+        </div>
+
+        <!-- Tasting Notes -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card h-100 shadow-sm border-0 bg-light text-center py-4">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted text-uppercase">Tasting Notes</h6>
+                    <h2 class="card-title mb-0 text-warning">@Model.TotalTastingNotes</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tags -->
+        <div class="col-md-4 col-lg-3">
+            <a asp-page="/Admin/Tags" class="card h-100 shadow-sm border-0 @(Model.PendingTagsCount > 0 ? "bg-warning-subtle border-warning" : "bg-light") admin-card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted text-uppercase">Managed Tags</h6>
+                    <h2 class="card-title mb-0 text-secondary">@Model.TotalTags</h2>
+                    @if(Model.PendingTagsCount > 0)
+                    {
+                        <small class="text-danger fw-bold">@Model.PendingTagsCount Reviews Pending</small>
+                    }
+                </div>
+            </a>
+        </div>
+
+        <!-- Orphaned Records -->
+        <div class="col-md-4 col-lg-3">
+            <a asp-page="/Admin/Maintenance" class="card h-100 shadow-sm border-0 @(Model.OrphanedRecords > 0 ? "bg-warning-subtle border-warning" : "bg-light") admin-card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted text-uppercase">Health Issues</h6>
+                    <h2 class="card-title mb-0 @(Model.OrphanedRecords > 0 ? "text-danger" : "text-muted")">@Model.OrphanedRecords</h2>
+                    @if(Model.OrphanedRecords > 0)
+                    {
+                        <small class="text-danger fw-bold">Action Required</small>
+                    }
+                </div>
+            </a>
         </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-md-4 col-lg-2">
-            <div class="card h-100 shadow-sm border-0 bg-light">
-                <div class="card-body text-center">
-                    <h6 class="card-subtitle mb-2 text-muted">Users</h6>
-                    <h2 class="card-title mb-0">@Model.TotalUsers</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 col-lg-2">
-            <div class="card h-100 shadow-sm border-0 bg-light">
-                <div class="card-body text-center">
-                    <h6 class="card-subtitle mb-2 text-muted">Whiskies</h6>
-                    <h2 class="card-title mb-0">@Model.TotalWhiskies</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 col-lg-2">
-            <div class="card h-100 shadow-sm border-0 bg-light">
-                <div class="card-body text-center">
-                    <h6 class="card-subtitle mb-2 text-muted">Bottles</h6>
-                    <h2 class="card-title mb-0">@Model.TotalBottles</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 col-lg-2">
-            <div class="card h-100 shadow-sm border-0 bg-light">
-                <div class="card-body text-center">
-                    <h6 class="card-subtitle mb-2 text-muted">Collections</h6>
-                    <h2 class="card-title mb-0">@Model.TotalCollections</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 col-lg-2">
-            <div class="card h-100 shadow-sm border-0 bg-light">
-                <div class="card-body text-center">
-                    <h6 class="card-subtitle mb-2 text-muted">Tasting Notes</h6>
-                    <h2 class="card-title mb-0">@Model.TotalTastingNotes</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="mt-5">
+    <div class="mt-5 text-center">
         <h3>Administrative Tasks</h3>
-        <p class="text-muted">Use the navigation above to manage the system. Click on "Maintenance" to check for orphaned records and perform system cleanup.</p>
+        <p class="text-muted">Click on any metrics card above to manage that area of the system.</p>
     </div>
 </div>

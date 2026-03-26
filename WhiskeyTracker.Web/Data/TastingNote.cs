@@ -26,4 +26,6 @@ public class TastingNote
 
     [MaxLength(2000)]
     public string? Notes { get; set; } = string.Empty;
+
+    public List<TastingNoteTag> TastingNoteTags { get; set; } = new();
 }

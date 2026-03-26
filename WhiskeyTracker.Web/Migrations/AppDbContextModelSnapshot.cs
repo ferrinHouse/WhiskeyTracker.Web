@@ -406,6 +406,33 @@ namespace WhiskeyTracker.Web.Migrations
                     b.ToTable("CollectionMembers");
                 });
 
+            modelBuilder.Entity("WhiskeyTracker.Web.Data.Tag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Tags");
+                });
+
             modelBuilder.Entity("WhiskeyTracker.Web.Data.TastingNote", b =>
                 {
                     b.Property<int>("Id")
@@ -448,6 +475,24 @@ namespace WhiskeyTracker.Web.Migrations
                     b.HasIndex("WhiskeyId");
 
                     b.ToTable("TastingNotes");
+                });
+
+            modelBuilder.Entity("WhiskeyTracker.Web.Data.TastingNoteTag", b =>
+                {
+                    b.Property<int>("TastingNoteId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TagId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Field")
+                        .HasColumnType("integer");
+
+                    b.HasKey("TastingNoteId", "TagId", "Field");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("TastingNoteTags");
                 });
 
             modelBuilder.Entity("WhiskeyTracker.Web.Data.TastingSession", b =>
@@ -680,6 +725,25 @@ namespace WhiskeyTracker.Web.Migrations
                     b.Navigation("Whiskey");
                 });
 
+            modelBuilder.Entity("WhiskeyTracker.Web.Data.TastingNoteTag", b =>
+                {
+                    b.HasOne("WhiskeyTracker.Web.Data.Tag", "Tag")
+                        .WithMany("TastingNoteTags")
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WhiskeyTracker.Web.Data.TastingNote", "TastingNote")
+                        .WithMany("TastingNoteTags")
+                        .HasForeignKey("TastingNoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tag");
+
+                    b.Navigation("TastingNote");
+                });
+
             modelBuilder.Entity("WhiskeyTracker.Web.Data.Bottle", b =>
                 {
                     b.Navigation("TastingNotes");
@@ -690,6 +754,16 @@ namespace WhiskeyTracker.Web.Migrations
                     b.Navigation("Bottles");
 
                     b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("WhiskeyTracker.Web.Data.Tag", b =>
+                {
+                    b.Navigation("TastingNoteTags");
+                });
+
+            modelBuilder.Entity("WhiskeyTracker.Web.Data.TastingNote", b =>
+                {
+                    b.Navigation("TastingNoteTags");
                 });
 
             modelBuilder.Entity("WhiskeyTracker.Web.Data.TastingSession", b =>

@@ -102,7 +102,16 @@ else
             <div class="list-group-item d-flex justify-content-between align-items-center">
                 <div>
                     <h6 class="mb-0 fw-bold">@note.Whiskey.Name</h6>
-                    <small class="text-muted">@note.Notes</small>
+                    @if (note.TastingNoteTags.Any())
+                    {
+                        <div class="mt-1">
+                            @foreach(var tg in note.TastingNoteTags.Take(3))
+                            {
+                                <span class="badge rounded-pill bg-light text-dark border me-1" style="font-size: 0.7rem;">@tg.Tag.Name</span>
+                            }
+                        </div>
+                    }
+                    <small class="text-muted d-block mt-1">@note.Notes</small>
                 </div>
                 <div class="text-end">
                     <span class="text-warning">

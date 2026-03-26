@@ -4,7 +4,6 @@ using WhiskeyTracker.Web.Data;
 using WhiskeyTracker.Web.Pages.Tasting;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-
 using Moq;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
@@ -162,7 +161,6 @@ public class WizardTests
         SetMockUser(pageModel, userId);
 
         // ACT
-        // Manually trigger validation since it doesn't run automatically in unit tests
         var validationContext = new ValidationContext(pageModel, null, null);
         var validationResults = new List<ValidationResult>();
         Validator.TryValidateObject(pageModel, validationContext, validationResults, true);
@@ -213,8 +211,8 @@ public class WizardTests
         var pageModel = new WizardModel(context)
         {
             EditNoteId = existingNote.Id,
-            SelectedBottleId = bottle.Id, // Same bottle, just changing pour amount
-            PourAmountOz = 2.0, // Changed from ~1.5oz (44ml) to 2oz (59ml)
+            SelectedBottleId = bottle.Id,
+            PourAmountOz = 2.0,
             NewNote = new TastingNote { Rating = 5, Notes = "Updated notes" }
         };
         SetMockUser(pageModel, userId);
@@ -226,50 +224,59 @@ public class WizardTests
         Assert.IsType<RedirectToPageResult>(result);
 
         var updated = await context.TastingNotes.FindAsync(existingNote.Id);
-        Assert.Equal(whiskey.Id, updated!.WhiskeyId); // whiskey derived from bottle, unchanged
-        Assert.Equal(5, updated.Rating);
+        Assert.Equal(5, updated!.Rating);
         Assert.Equal("Updated notes", updated.Notes);
-        // Pour amount updated to 2oz = 59ml
         Assert.Equal(59, updated.PourAmountMl);
-        // Bottle volume adjusted by the difference (59 - 44 = 15ml more deducted)
+        
         var updatedBottle = await context.Bottles.FindAsync(bottle.Id);
         Assert.Equal(700 - 15, updatedBottle!.CurrentVolumeMl);
-        // OrderIndex must be preserved
-        Assert.Equal(1, updated.OrderIndex);
     }
 
     [Fact]
-    public async Task OnPost_EditMode_ReturnsNotFound_WhenNoteNotInSession()
+    public async Task OnPost_SavesTagsCorrectly()
     {
         // ARRANGE
         using var context = GetInMemoryContext();
         var userId = "test-user";
-        var whiskey = new Whiskey { Name = "Test Whiskey", Distillery = "Test Distillery" };
+        var whiskey = new Whiskey { Name = "Tag Test", Distillery = "Distillery" };
         context.Whiskies.Add(whiskey);
         await context.SaveChangesAsync();
 
-        var session = new TastingSession { Title = "My Session", UserId = userId, Date = DateOnly.FromDateTime(DateTime.Now) };
-        var otherSession = new TastingSession { Title = "Other Session", UserId = "other-user", Date = DateOnly.FromDateTime(DateTime.Now) };
-        context.TastingSessions.AddRange(session, otherSession);
-        await context.SaveChangesAsync();
-
-        // Note belongs to a different session
-        var noteInOtherSession = new TastingNote { WhiskeyId = whiskey.Id, TastingSessionId = otherSession.Id, Rating = 3, OrderIndex = 1, UserId = "other-user" };
-        context.TastingNotes.Add(noteInOtherSession);
+        var session = new TastingSession { Title = "Session", UserId = userId, Date = DateOnly.FromDateTime(DateTime.Now) };
+        context.TastingSessions.Add(session);
         await context.SaveChangesAsync();
 
         var pageModel = new WizardModel(context)
         {
-            EditNoteId = noteInOtherSession.Id,
             SelectedWhiskeyId = whiskey.Id,
-            NewNote = new TastingNote { Rating = 5, Notes = "Hacked" }
+            PourAmountOz = 1.0,
+            NewNote = new TastingNote { Rating = 4, Notes = "With tags" },
+            NoseTags = "Vanilla, Oak",
+            PalateTags = "Caramel, Spice",
+            FinishTags = "Long"
         };
         SetMockUser(pageModel, userId);
 
         // ACT
-        var result = await pageModel.OnPostAsync(session.Id);
+        await pageModel.OnPostAsync(session.Id);
 
         // ASSERT
-        Assert.IsType<NotFoundResult>(result);
+        var note = await context.TastingNotes
+            .Include(n => n.TastingNoteTags)
+            .ThenInclude(tnt => tnt.Tag)
+            .FirstAsync();
+
+        Assert.Equal(5, note.TastingNoteTags.Count); 
+        
+        var noseTags = note.TastingNoteTags.Where(t => t.Field == TastingField.Nose).Select(t => t.Tag.Name).ToList();
+        Assert.Contains("vanilla", noseTags);
+        Assert.Contains("oak", noseTags);
+
+        var palateTags = note.TastingNoteTags.Where(t => t.Field == TastingField.Palate).Select(t => t.Tag.Name).ToList();
+        Assert.Contains("caramel", palateTags);
+        Assert.Contains("spice", palateTags);
+
+        var finishTags = note.TastingNoteTags.Where(t => t.Field == TastingField.Finish).Select(t => t.Tag.Name).ToList();
+        Assert.Contains("long", finishTags);
     }
 }

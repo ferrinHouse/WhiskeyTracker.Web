@@ -46,6 +46,8 @@ public class IndexModel : PageModel
 
         RecentNotes = await _context.TastingNotes
             .Include(n => n.Whiskey)
+            .Include(n => n.TastingNoteTags)
+                .ThenInclude(tnt => tnt.Tag)
             .Where(n => n.Bottle != null && n.Bottle.CollectionId.HasValue && myCollectionIds.Contains(n.Bottle.CollectionId.Value))
             .OrderByDescending(n => n.Id)
             .Take(5)

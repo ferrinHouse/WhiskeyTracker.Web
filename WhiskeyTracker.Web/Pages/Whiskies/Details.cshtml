@@ -230,6 +230,23 @@
                                         }
                                     </span>
                                 </div>
+                                
+                                @if (note.TastingNoteTags.Any())
+                                {
+                                    <div class="mb-2">
+                                        @foreach(var group in note.TastingNoteTags.GroupBy(tg => tg.Field))
+                                        {
+                                            <div class="mb-1">
+                                                <small class="text-muted fw-bold me-1">@group.Key:</small>
+                                                @foreach(var tg in group)
+                                                {
+                                                    <span class="badge rounded-pill bg-light text-dark border me-1">@tg.Tag.Name</span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
                                 <p class="mb-1 text-muted">@note.Notes</p>
                             </div>
                         }

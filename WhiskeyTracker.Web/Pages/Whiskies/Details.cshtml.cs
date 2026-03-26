@@ -37,6 +37,9 @@ public class DetailsModel : PageModel
 
             .Include(tn => tn.TastingNotes.Where(n => n.UserId == userId)) // <--- Keep Notes Private for now
               .ThenInclude(ts => ts.TastingSession) 
+            .Include(tn => tn.TastingNotes.Where(n => n.UserId == userId))
+              .ThenInclude(nt => nt.TastingNoteTags)
+              .ThenInclude(tnt => tnt.Tag)
             .FirstOrDefaultAsync(m => m.Id == id);
 
         if (whiskey == null) return NotFound();

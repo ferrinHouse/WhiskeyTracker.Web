@@ -16,6 +16,20 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionK
     public DbSet<Collection> Collections { get; set; }
     public DbSet<CollectionMember> CollectionMembers { get; set; }
     public DbSet<CollectionInvitation> CollectionInvitations { get; set; }
+    public DbSet<Tag> Tags { get; set; }
+    public DbSet<TastingNoteTag> TastingNoteTags { get; set; }
 
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+        builder.Entity<TastingNoteTag>()
+            .HasKey(tnt => new { tnt.TastingNoteId, tnt.TagId, tnt.Field });
+
+        builder.Entity<Tag>()
+            .HasIndex(t => t.Name)
+            .IsUnique();
+    }
 }

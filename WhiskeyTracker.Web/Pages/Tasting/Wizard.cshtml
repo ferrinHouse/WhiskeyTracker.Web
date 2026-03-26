@@ -1,9 +1,35 @@
 @page "{sessionId:int}"
 @using System.Linq
+@using WhiskeyTracker.Web.Data
 @model WhiskeyTracker.Web.Pages.Tasting.WizardModel
 @{
     ViewData["Title"] = "Tasting Wizard";
 }
+
+<style>
+    .tag-pill {
+        display: inline-flex;
+        align-items: center;
+        background-color: #f1f3f5;
+        border: 1px solid #dee2e6;
+        border-radius: 50px;
+        padding: 0.2rem 0.6rem;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+    }
+    .tag-pill:hover {
+        background-color: #e9ecef;
+    }
+    .tag-pill .btn-close {
+        font-size: 0.5rem;
+        margin-left: 0.4rem;
+        padding: 0.2rem;
+    }
+    .tag-input:focus {
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.1);
+        border-color: #198754;
+    }
+</style>
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center">
@@ -24,6 +50,9 @@
                 <div class="card-body">
                     <form method="post">
                         <input type="hidden" id="EditNoteId" name="EditNoteId" value="" />
+                        <input type="hidden" asp-for="NoseTags" id="nose-tags-hidden" />
+                        <input type="hidden" asp-for="PalateTags" id="palate-tags-hidden" />
+                        <input type="hidden" asp-for="FinishTags" id="finish-tags-hidden" />
 
                         @if (TempData["SuccessMessage"] != null)
                         {
@@ -81,6 +110,37 @@
                             </div>
                         </div>
 
+                        <!-- Tagging Section -->
+                        <div class="tag-entry-section mb-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Nose <small class="text-muted">(Tags)</small></label>
+                                <div id="nose-tags-container" class="d-flex flex-wrap gap-1 mb-2"></div>
+                                <input type="text" class="form-control form-control-sm tag-input" 
+                                       data-field="nose" list="tag-suggestions" placeholder="Add nose tags (e.g. Vanilla, Smoke)..." />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Palate <small class="text-muted">(Tags)</small></label>
+                                <div id="palate-tags-container" class="d-flex flex-wrap gap-1 mb-2"></div>
+                                <input type="text" class="form-control form-control-sm tag-input" 
+                                       data-field="palate" list="tag-suggestions" placeholder="Add palate tags (e.g. Caramel, Spice)..." />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Finish <small class="text-muted">(Tags)</small></label>
+                                <div id="finish-tags-container" class="d-flex flex-wrap gap-1 mb-2"></div>
+                                <input type="text" class="form-control form-control-sm tag-input" 
+                                       data-field="finish" list="tag-suggestions" placeholder="Add finish tags (e.g. Long, Oak)..." />
+                            </div>
+                        </div>
+
+                        <datalist id="tag-suggestions">
+                            @foreach (var tag in Model.AvailableTags)
+                            {
+                                <option value="@tag.Name" />
+                            }
+                        </datalist>
+
                         <div class="mb-3">
                             <label asp-for="NewNote.Notes" class="form-label">Impressions <span class="text-muted">(optional)</span></label>
                             <textarea asp-for="NewNote.Notes" class="form-control" rows="3"
@@ -116,7 +176,10 @@
                              data-notes="@(note.Notes ?? "")"
                              data-whiskey-id="@note.WhiskeyId"
                              data-bottle-id="@(note.BottleId?.ToString() ?? "")"
-                             data-pour-ml="@note.PourAmountMl">
+                             data-pour-ml="@note.PourAmountMl"
+                             data-nose-tags="@string.Join(",", note.TastingNoteTags.Where(t => t.Field == TastingField.Nose).Select(t => t.Tag.Name))"
+                             data-palate-tags="@string.Join(",", note.TastingNoteTags.Where(t => t.Field == TastingField.Palate).Select(t => t.Tag.Name))"
+                             data-finish-tags="@string.Join(",", note.TastingNoteTags.Where(t => t.Field == TastingField.Finish).Select(t => t.Tag.Name))">
                             <div class="d-flex w-100 justify-content-between align-items-start">
                                 <h5 class="mb-1">
                                     <span class="badge bg-secondary rounded-pill me-2">#@note.OrderIndex</span>
@@ -137,7 +200,22 @@
                                             onclick="startEdit(this)">Edit</button>
                                 </div>
                             </div>
-                            <p class="mb-1 mt-2">@note.Notes</p>
+                            @if (note.TastingNoteTags.Any())
+                            {
+                                <div class="mt-2">
+                                    @foreach(var group in note.TastingNoteTags.GroupBy(tg => tg.Field))
+                                    {
+                                        <div class="mb-1">
+                                            <small class="text-muted fw-bold me-1">@group.Key:</small>
+                                            @foreach(var tg in group)
+                                            {
+                                                <span class="badge rounded-pill bg-light text-dark border me-1">@tg.Tag.Name</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            <p class="mb-1 mt-2 text-muted" style="font-style: italic;">@note.Notes</p>
                         </div>
                     }
                 </div>
@@ -174,6 +252,72 @@
 
     <script>
         var originalPourNumber = '@(Model.Session.Notes.Count + 1)';
+        var tagState = {
+            nose: [],
+            palate: [],
+            finish: []
+        };
+
+        $(document).ready(function () {
+            // Initialize tag inputs
+            $('.tag-input').on('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    var val = $(this).val().trim().replace(/,/g, '');
+                    if (val) {
+                        addTag($(this).data('field'), val);
+                        $(this).val('');
+                    }
+                }
+            });
+
+            // Handle selection from datalist
+            $('.tag-input').on('input', function() {
+                var val = $(this).val();
+                var field = $(this).data('field');
+                var options = $('#tag-suggestions option');
+                for (var i = 0; i < options.length; i++) {
+                    if (options[i].value === val) {
+                        addTag(field, val);
+                        $(this).val('');
+                        break;
+                    }
+                }
+            });
+        });
+
+        function addTag(field, name) {
+            name = name.toLowerCase();
+            if (!tagState[field].includes(name)) {
+                tagState[field].push(name);
+                renderTags(field);
+                updateHiddenFields();
+            }
+        }
+
+        function removeTag(field, name) {
+            tagState[field] = tagState[field].filter(t => t !== name);
+            renderTags(field);
+            updateHiddenFields();
+        }
+
+        function renderTags(field) {
+            var container = $('#' + field + '-tags-container');
+            container.empty();
+            tagState[field].forEach(tag => {
+                var pill = $('<div class="tag-pill shadow-sm"></div>').text(tag);
+                var close = $('<button type="button" class="btn-close" aria-label="Remove"></button>');
+                close.click(() => removeTag(field, tag));
+                pill.append(close);
+                container.append(pill);
+            });
+        }
+
+        function updateHiddenFields() {
+            $('#nose-tags-hidden').val(tagState.nose.join(','));
+            $('#palate-tags-hidden').val(tagState.palate.join(','));
+            $('#finish-tags-hidden').val(tagState.finish.join(','));
+        }
 
         function startEdit(btn) {
             var item = $(btn).closest('.list-group-item');
@@ -184,9 +328,23 @@
             var whiskeyId = item.data('whiskey-id');
             var bottleId  = item.data('bottle-id');
             var pourMl    = item.data('pour-ml');
+            
+            var noseTags   = item.data('nose-tags');
+            var palateTags = item.data('palate-tags');
+            var finishTags = item.data('finish-tags');
 
             // Set hidden edit field
             $('#EditNoteId').val(noteId);
+
+            // Pre-populate tags
+            tagState.nose = noseTags ? String(noseTags).split(',').filter(t => t) : [];
+            tagState.palate = palateTags ? String(palateTags).split(',').filter(t => t) : [];
+            tagState.finish = finishTags ? String(finishTags).split(',').filter(t => t) : [];
+            
+            renderTags('nose');
+            renderTags('palate');
+            renderTags('finish');
+            updateHiddenFields();
 
             // Pre-populate the right selector based on how the note was originally logged
             if (bottleId) {
@@ -220,6 +378,14 @@
             $('#PourAmountOz').val('');
             $('input[name="NewNote.Rating"][value="3"]').prop('checked', true);
             $('#NewNote_Notes').val('');
+            
+            tagState.nose = [];
+            tagState.palate = [];
+            tagState.finish = [];
+            renderTags('nose');
+            renderTags('palate');
+            renderTags('finish');
+            updateHiddenFields();
 
             $('#card-header-title').text('Pour #' + originalPourNumber);
             $('#submit-btn').text('Log & Pour Next').removeClass('btn-success').addClass('btn-primary');
