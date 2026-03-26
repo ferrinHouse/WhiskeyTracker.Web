@@ -23,11 +23,16 @@ public class DetailsModel : PageModel
         if (string.IsNullOrEmpty(userId)) return NotFound();
 
         var session = await _context.TastingSessions
+            .Include(s => s.User)
+            .Include(s => s.Participants)
+                .ThenInclude(p => p.User)
             .Include(s => s.Notes)
                 .ThenInclude(n => n.Whiskey)
             .Include(s => s.Notes)
                 .ThenInclude(n => n.Bottle)
-            .FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId);
+            .Include(s => s.Notes)
+                .ThenInclude(n => n.User)
+            .FirstOrDefaultAsync(m => m.Id == id && (m.UserId == userId || m.Participants.Any(p => p.UserId == userId)));
 
         if (session == null)
         {

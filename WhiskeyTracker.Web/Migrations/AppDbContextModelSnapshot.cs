@@ -406,6 +406,58 @@ namespace WhiskeyTracker.Web.Migrations
                     b.ToTable("CollectionMembers");
                 });
 
+            modelBuilder.Entity("WhiskeyTracker.Web.Data.SessionLineupItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("BottleId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TastingSessionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WhiskeyId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BottleId");
+
+                    b.HasIndex("TastingSessionId");
+
+                    b.HasIndex("WhiskeyId");
+
+                    b.ToTable("SessionLineupItems");
+                });
+
+            modelBuilder.Entity("WhiskeyTracker.Web.Data.SessionParticipant", b =>
+                {
+                    b.Property<int>("TastingSessionId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDriver")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("TastingSessionId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SessionParticipants");
+                });
+
             modelBuilder.Entity("WhiskeyTracker.Web.Data.Tag", b =>
                 {
                     b.Property<int>("Id")
@@ -505,6 +557,10 @@ namespace WhiskeyTracker.Web.Migrations
 
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
+
+                    b.Property<string>("JoinCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -700,6 +756,50 @@ namespace WhiskeyTracker.Web.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("WhiskeyTracker.Web.Data.SessionLineupItem", b =>
+                {
+                    b.HasOne("WhiskeyTracker.Web.Data.Bottle", "Bottle")
+                        .WithMany()
+                        .HasForeignKey("BottleId");
+
+                    b.HasOne("WhiskeyTracker.Web.Data.TastingSession", "TastingSession")
+                        .WithMany("Lineup")
+                        .HasForeignKey("TastingSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WhiskeyTracker.Web.Data.Whiskey", "Whiskey")
+                        .WithMany()
+                        .HasForeignKey("WhiskeyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Bottle");
+
+                    b.Navigation("TastingSession");
+
+                    b.Navigation("Whiskey");
+                });
+
+            modelBuilder.Entity("WhiskeyTracker.Web.Data.SessionParticipant", b =>
+                {
+                    b.HasOne("WhiskeyTracker.Web.Data.TastingSession", "TastingSession")
+                        .WithMany("Participants")
+                        .HasForeignKey("TastingSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WhiskeyTracker.Web.Data.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TastingSession");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("WhiskeyTracker.Web.Data.TastingNote", b =>
                 {
                     b.HasOne("WhiskeyTracker.Web.Data.Bottle", "Bottle")
@@ -768,7 +868,11 @@ namespace WhiskeyTracker.Web.Migrations
 
             modelBuilder.Entity("WhiskeyTracker.Web.Data.TastingSession", b =>
                 {
+                    b.Navigation("Lineup");
+
                     b.Navigation("Notes");
+
+                    b.Navigation("Participants");
                 });
 
             modelBuilder.Entity("WhiskeyTracker.Web.Data.Whiskey", b =>

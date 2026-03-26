@@ -4,16 +4,24 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using WhiskeyTracker.Web.Data;
+using WhiskeyTracker.Web.Hubs;
+using Microsoft.AspNetCore.SignalR;
+using WhiskeyTracker.Web.Services;
+using System.Security.Claims;
 
 namespace WhiskeyTracker.Web.Pages.Tasting;
 
 public class WizardModel : PageModel
 {
     private readonly AppDbContext _context;
+    private readonly IHubContext<TastingHub> _hubContext;
+    private readonly TastingSessionService _sessionService;
 
-    public WizardModel(AppDbContext context)
+    public WizardModel(AppDbContext context, IHubContext<TastingHub> hubContext, TastingSessionService sessionService)
     {
         _context = context;
+        _hubContext = hubContext;
+        _sessionService = sessionService;
     }
 
     public TastingSession Session { get; set; } = new();
@@ -51,15 +59,25 @@ public class WizardModel : PageModel
     public async Task<IActionResult> OnGetAsync(int sessionId)
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        
+        if (string.IsNullOrEmpty(userId)) return RedirectToPage("/Account/Login");
+
         await LoadPageData(sessionId);
 
         if (Session.Id == 0)
         {
             return NotFound($"Session with ID {sessionId} not found.");
         }
-        
-        if (Session.UserId != userId) return NotFound();
+
+        // Check if user is the owner or a participant
+        var isOwner = Session.UserId == userId;
+        var isParticipant = Session.Participants.Any(p => p.UserId == userId);
+
+        if (!isOwner && !isParticipant)
+        {
+            // If not a participant, check if they are trying to join (implicitly or explicitly)
+            // For now, we restrict to existing participants or owner.
+            return NotFound();
+        }
 
         return Page();
     }
@@ -69,8 +87,10 @@ public class WizardModel : PageModel
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-        var sessionExists = await _context.TastingSessions.AnyAsync(s => s.Id == sessionId && s.UserId == userId);
-        if (!sessionExists) return NotFound();
+        var isParticipant = await _context.SessionParticipants.AnyAsync(p => p.TastingSessionId == sessionId && p.UserId == userId);
+        var isOwner = await _context.TastingSessions.AnyAsync(s => s.Id == sessionId && s.UserId == userId);
+        
+        if (!isOwner && !isParticipant) return NotFound();
 
         var myCollectionIds = await _context.CollectionMembers
             .Where(m => m.UserId == userId)
@@ -152,6 +172,11 @@ public class WizardModel : PageModel
             await ProcessTagsAsync(note, userId);
 
             await _context.SaveChangesAsync();
+
+            // Notify participants via SignalR
+            var userDisplayName = User.FindFirst("DisplayName")?.Value ?? User.Identity?.Name ?? "A friend";
+            await _hubContext.Clients.Group($"session_{sessionId}").SendAsync("NoteUpdated", userDisplayName);
+
             TempData["SuccessMessage"] = "Pour updated!";
             return RedirectToPage(new { sessionId });
         }
@@ -231,9 +256,16 @@ public class WizardModel : PageModel
         NewNote.UserId = userId;
         
         await ProcessTagsAsync(NewNote, userId);
+        
+        // Update shared lineup if this is a collaborative session (or just always for consistency)
+        await UpdateSharedLineupAsync(sessionId, NewNote.WhiskeyId, NewNote.BottleId);
+        
+        // Notify participants via SignalR
+        var whiskey = await _context.Whiskies.FindAsync(NewNote.WhiskeyId);
+        var authorName = User.FindFirst("DisplayName")?.Value ?? User.Identity?.Name ?? "A friend";
+        await _hubContext.Clients.Group($"session_{sessionId}").SendAsync("WhiskeyAdded", whiskey?.Name ?? "Whiskey", authorName);
 
         await _context.SaveChangesAsync();
-
         TempData["SuccessMessage"] = "Tasting note added successfully! Ready for the next pour!";
 
         // Redirect to the SAME page to refresh the list and clear the form
@@ -243,11 +275,17 @@ public class WizardModel : PageModel
     private async Task LoadPageData(int sessionId)
     {
         var session = await _context.TastingSessions
+            .Include(s => s.Participants)
+                .ThenInclude(p => p.User)
+            .Include(s => s.Lineup)
+                .ThenInclude(l => l.Whiskey)
+            .Include(s => s.Lineup)
+                .ThenInclude(l => l.Bottle)
             .Include(s => s.Notes)
-            .ThenInclude(n => n.Whiskey)
+                .ThenInclude(n => n.Whiskey)
             .Include(s => s.Notes)
-            .ThenInclude(n => n.TastingNoteTags)
-            .ThenInclude(tnt => tnt.Tag)
+                .ThenInclude(n => n.TastingNoteTags)
+                    .ThenInclude(tnt => tnt.Tag)
             .FirstOrDefaultAsync(s => s.Id == sessionId);
 
         if (session != null)
@@ -334,6 +372,43 @@ public class WizardModel : PageModel
                 TagId = tag.Id,
                 Field = field
             });
+        }
+    }
+
+    public async Task<IActionResult> OnPostJoinAsync(int sessionId, string joinCode)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return RedirectToPage("/Account/Login");
+
+        var userDisplayName = User.FindFirst("DisplayName")?.Value ?? User.Identity?.Name;
+        
+        var (success, resultSessionId, error) = await _sessionService.JoinSessionAsync(joinCode, userId, userDisplayName);
+
+        if (!success)
+        {
+            TempData["ErrorMessage"] = error;
+            return RedirectToPage(new { sessionId });
+        }
+
+        return RedirectToPage(new { sessionId = resultSessionId });
+    }
+
+    private async Task UpdateSharedLineupAsync(int sessionId, int whiskeyId, int? bottleId)
+    {
+        var alreadyInLineup = await _context.SessionLineupItems
+            .AnyAsync(l => l.TastingSessionId == sessionId && l.WhiskeyId == whiskeyId);
+
+        if (!alreadyInLineup)
+        {
+            var nextIndex = await _context.SessionLineupItems.CountAsync(l => l.TastingSessionId == sessionId) + 1;
+            _context.SessionLineupItems.Add(new SessionLineupItem
+            {
+                TastingSessionId = sessionId,
+                WhiskeyId = whiskeyId,
+                BottleId = bottleId,
+                OrderIndex = nextIndex
+            });
+            await _context.SaveChangesAsync();
         }
     }
 }

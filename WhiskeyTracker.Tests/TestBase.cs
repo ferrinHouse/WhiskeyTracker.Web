@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using WhiskeyTracker.Web.Data;
+using Microsoft.AspNetCore.SignalR;
+using WhiskeyTracker.Web.Hubs;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace WhiskeyTracker.Tests;
 
@@ -52,5 +55,26 @@ public class TestBase
                 User = claimsPrincipal
             }
         };
+
+        // Mock TempData by default
+        SetMockTempData(page);
+    }
+
+    protected void SetMockTempData(PageModel page)
+    {
+        var mockTempData = new Mock<ITempDataDictionary>();
+        page.TempData = mockTempData.Object;
+    }
+
+    protected Mock<IHubContext<TastingHub>> GetMockHubContext()
+    {
+        var mockHubContext = new Mock<IHubContext<TastingHub>>();
+        var mockClients = new Mock<IHubClients>();
+        var mockClientProxy = new Mock<IClientProxy>();
+
+        mockHubContext.Setup(h => h.Clients).Returns(mockClients.Object);
+        mockClients.Setup(c => c.Group(It.IsAny<string>())).Returns(mockClientProxy.Object);
+        
+        return mockHubContext;
     }
 }

@@ -42,13 +42,13 @@ public class IndexModel : PageModel
             .CountAsync(b => b.Status == BottleStatus.Opened && b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value));
 
         TotalSessions = await _context.TastingSessions
-            .CountAsync(s => s.UserId == userId);
+            .CountAsync(s => s.UserId == userId || s.Participants.Any(p => p.UserId == userId));
 
         RecentNotes = await _context.TastingNotes
             .Include(n => n.Whiskey)
             .Include(n => n.TastingNoteTags)
                 .ThenInclude(tnt => tnt.Tag)
-            .Where(n => n.Bottle != null && n.Bottle.CollectionId.HasValue && myCollectionIds.Contains(n.Bottle.CollectionId.Value))
+            .Where(n => n.UserId == userId || (n.BottleId.HasValue && n.Bottle.CollectionId.HasValue && myCollectionIds.Contains(n.Bottle.CollectionId.Value)))
             .OrderByDescending(n => n.Id)
             .Take(5)
             .ToListAsync();

@@ -5,36 +5,15 @@ using WhiskeyTracker.Web.Data;
 using WhiskeyTracker.Web.Pages.Tasting;
 using System.Security.Claims;
 using Xunit;
+using WhiskeyTracker.Web.Hubs;
+using Microsoft.AspNetCore.SignalR;
+using Moq;
+using WhiskeyTracker.Web.Services;
 
 namespace WhiskeyTracker.Tests;
 
-public class SessionManagementTests
+public class SessionManagementTests : TestBase
 {
-    private AppDbContext GetInMemoryContext()
-    {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        return new AppDbContext(options);
-    }
-
-    private void SetMockUser(PageModel page, string userId)
-    {
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, userId)
-        };
-        var identity = new ClaimsIdentity(claims, "TestAuthType");
-        var claimsPrincipal = new ClaimsPrincipal(identity);
-
-        page.PageContext = new PageContext
-        {
-            HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext
-            {
-                User = claimsPrincipal
-            }
-        };
-    }
 
     [Fact]
     public async Task Index_OnGet_ReturnsOnlyUsersSessions()
@@ -51,7 +30,9 @@ public class SessionManagementTests
         );
         await context.SaveChangesAsync();
 
-        var pageModel = new WhiskeyTracker.Web.Pages.Tasting.IndexModel(context);
+        var hubMock = GetMockHubContext();
+        var service = new TastingSessionService(context, hubMock.Object);
+        var pageModel = new WhiskeyTracker.Web.Pages.Tasting.IndexModel(context, service);
         SetMockUser(pageModel, userId);
 
         // ACT

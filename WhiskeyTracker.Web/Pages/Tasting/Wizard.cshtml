@@ -32,12 +32,33 @@
 </style>
 
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center">
-        <div>
+    <div class="row align-items-center">
+        <div class="col-md-8">
             <h6 class="text-muted text-uppercase mb-1">Current Session</h6>
-            <h2>@Model.Session.Title</h2>
+            <h2 class="mb-0">@Model.Session.Title</h2>
+            @if (!string.IsNullOrEmpty(Model.Session.JoinCode))
+            {
+                <div class="mt-2 text-primary fw-bold" style="letter-spacing: 0.1rem;">
+                    <i class="bi bi-people-fill me-1"></i> Join Code: <span class="bg-primary text-white px-2 py-1 rounded">@Model.Session.JoinCode</span>
+                    <small class="text-muted ms-2 fw-normal">(Share this with your friends)</small>
+                </div>
+            }
         </div>
-        <a asp-page="./Index" class="btn btn-outline-secondary">Finish & Exit</a>
+        <div class="col-md-4 text-end">
+            <div id="participants-list" class="d-flex justify-content-end gap-1 mb-2">
+                @* Always show owner/driver *@
+                <span class="badge rounded-pill bg-primary text-white border shadow-sm" title="Session Owner">
+                    <i class="bi bi-person-fill"></i> Driver
+                </span>
+                @foreach (var p in Model.Session.Participants)
+                {
+                    <span class="badge rounded-pill bg-light text-dark border shadow-sm" title="Joined at @p.JoinedAt.ToLocalTime().ToShortTimeString()">
+                        <i class="bi bi-person-fill text-primary"></i> @(p.User.DisplayName ?? p.User.UserName)
+                    </span>
+                }
+            </div>
+            <a asp-page="./Index" class="btn btn-outline-secondary">Finish & Exit</a>
+        </div>
     </div>
     <hr />
 
@@ -391,5 +412,66 @@
             $('#submit-btn').text('Log & Pour Next').removeClass('btn-success').addClass('btn-primary');
             $('#cancel-edit-btn').addClass('d-none');
         }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script>
+        const sessionId = "@Model.Session.Id";
+        const currentUserId = "@(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)";
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/tastingHub")
+            .withAutomaticReconnect()
+            .build();
+
+        function showToast(title, message, icon, color, showButton = false) {
+            const toastId = 'toast-' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast show align-items-center text-white bg-${color} border-0 mb-2 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="bi ${icon} me-2"></i><strong>${title}</strong>: ${message}
+                            ${showButton ? `<button type="button" class="btn btn-sm btn-light ms-2 px-3 py-0" onclick="location.reload()">Refresh Lineup</button>` : ''}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>`;
+            
+            if (!$('#toast-container').length) {
+                $('body').append('<div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1060"></div>');
+            }
+            $('#toast-container').append(toastHtml);
+            
+            // Auto-remove after 8 seconds
+            setTimeout(() => {
+                const $t = $(`#${toastId}`);
+                if ($t.length) {
+                    $t.fadeOut('slow', function() { $(this).remove(); });
+                }
+            }, 8000);
+        }
+
+        connection.on("WhiskeyAdded", function (whiskeyName, userName) {
+            showToast('New Whiskey', `${userName} added <strong>${whiskeyName}</strong> to the lineup!`, 'bi-plus-circle-fill', 'success', true);
+        });
+
+        connection.on("NoteUpdated", function (userName) {
+            showToast('Note Updated', `${userName} updated their tasting note.`, 'bi-pencil-square', 'info', true);
+        });
+
+        connection.on("ParticipantJoined", function (userName) {
+            // Update the UI list immediately
+            if ($('#participants-list').length) {
+                const badge = $('<span class="badge rounded-pill bg-info text-dark border shadow-sm ms-1 animated pulse"><i class="bi bi-person-plus-fill"></i> ' + userName + '</span>');
+                $('#participants-list').append(badge);
+            }
+            showToast('Participant Joined', `${userName} joined the session!`, 'bi-person-plus-fill', 'primary');
+        });
+
+        connection.start().then(function () {
+            console.log("SignalR Connected");
+            connection.invoke("JoinSession", sessionId);
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
     </script>
 }

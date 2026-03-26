@@ -18,6 +18,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionK
     public DbSet<CollectionInvitation> CollectionInvitations { get; set; }
     public DbSet<Tag> Tags { get; set; }
     public DbSet<TastingNoteTag> TastingNoteTags { get; set; }
+    public DbSet<SessionParticipant> SessionParticipants { get; set; }
+    public DbSet<SessionLineupItem> SessionLineupItems { get; set; }
 
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
 
@@ -27,6 +29,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionK
 
         builder.Entity<TastingNoteTag>()
             .HasKey(tnt => new { tnt.TastingNoteId, tnt.TagId, tnt.Field });
+
+        // SessionParticipant composite key
+        builder.Entity<SessionParticipant>()
+            .HasKey(sp => new { sp.TastingSessionId, sp.UserId });
 
         builder.Entity<Tag>()
             .HasIndex(t => t.Name)
