@@ -19,10 +19,12 @@
         <div class="col-md-5">
             <div class="card border-primary shadow-sm">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="m-0">Pour #@(Model.Session.Notes.Count + 1)</h5>
+                    <h5 class="m-0" id="card-header-title">Pour #@(Model.Session.Notes.Count + 1)</h5>
                 </div>
                 <div class="card-body">
                     <form method="post">
+                        <input type="hidden" id="EditNoteId" name="EditNoteId" value="" />
+
                         @if (TempData["SuccessMessage"] != null)
                         {
                             <div class="alert alert-success shadow-sm" role="alert">
@@ -38,7 +40,7 @@
                             </div>
                         }
 
-                        <div class="mb-3 p-2 bg-light border rounded">
+                        <div id="bottle-section" class="mb-3 p-2 bg-light border rounded">
                             <label class="form-label fw-bold text-success">Option A: Pour from Inventory</label>
                             <select asp-for="SelectedBottleId" class="form-select" asp-items="Model.BottleOptions">
                                 <option value="">-- Select from Shelf --</option>
@@ -47,21 +49,21 @@
                             <small class="text-muted">Use this if you are drinking one of your own open bottles.</small>
                         </div>
 
-                        <div class="text-center mb-3 fw-bold text-muted">- OR -</div>
+                        <div id="or-divider" class="text-center mb-3 fw-bold text-muted">- OR -</div>
 
-                        <div class="mb-4 p-2 bg-light border rounded">
+                        <div id="whiskey-section" class="mb-4 p-2 bg-light border rounded">
                             <label class="form-label fw-bold text-primary">Option B: Select Whiskey</label>
                             <select asp-for="SelectedWhiskeyId" class="form-select" asp-items="Model.WhiskeyOptions">
                                 <option value="">-- Select Whiskey --</option>
                             </select>
                             <span asp-validation-for="SelectedWhiskeyId" class="text-danger"></span>
-                            <small class="text-muted">Use this if you are at a bar, friend's house, or the bottle is
+                            <small class="text-muted" id="whiskey-hint">Use this if you are at a bar, friend's house, or the bottle is
                                 finished.</small>
                         </div>
 
                         <hr />
 
-                        <div class="mb-3">
+                        <div id="pour-amount-section" class="mb-3">
                             <label asp-for="PourAmountOz" class="form-label">Pour Amount (oz)</label>
                             <input asp-for="PourAmountOz" class="form-control" type="number" step="0.1" placeholder="e.g. 1.5" />
                             <span asp-validation-for="PourAmountOz" class="text-danger"></span>
@@ -85,8 +87,9 @@
                                 placeholder="Nose, Palate, Finish..."></textarea>
                         </div>
 
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Log & Pour Next</button>
+                        <div class="d-grid gap-2">
+                            <button type="submit" id="submit-btn" class="btn btn-primary">Log & Pour Next</button>
+                            <button type="button" id="cancel-edit-btn" class="btn btn-outline-secondary d-none" onclick="cancelEdit()">Cancel Edit</button>
                         </div>
                     </form>
                 </div>
@@ -106,18 +109,33 @@
                 <div class="list-group">
                     @foreach (var note in Enumerable.Reverse(Model.Session.Notes))
                     {
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
+                        <div class="list-group-item"
+                             data-note-id="@note.Id"
+                             data-order="@note.OrderIndex"
+                             data-rating="@note.Rating"
+                             data-notes="@(note.Notes ?? "")"
+                             data-whiskey-id="@note.WhiskeyId"
+                             data-bottle-id="@(note.BottleId?.ToString() ?? "")"
+                             data-pour-ml="@note.PourAmountMl">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
                                 <h5 class="mb-1">
                                     <span class="badge bg-secondary rounded-pill me-2">#@note.OrderIndex</span>
                                     @note.Whiskey.Name
                                 </h5>
-                                <small class="text-warning">
-                                    @for (int k = 0; k < note.Rating; k++)
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (note.PourAmountMl > 0)
                                     {
-                                        <span>★</span>
+                                        <small class="text-muted">@(Math.Round(note.PourAmountMl / 29.5735, 1)) oz</small>
                                     }
-                                </small>
+                                    <small class="text-warning">
+                                        @for (int k = 0; k < note.Rating; k++)
+                                        {
+                                            <span>★</span>
+                                        }
+                                    </small>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            onclick="startEdit(this)">Edit</button>
+                                </div>
                             </div>
                             <p class="mb-1 mt-2">@note.Notes</p>
                         </div>
@@ -135,14 +153,9 @@
 
     <script>
         $(document).ready(function () {
-            // Find any element with the 'alert' class (Success OR Danger)
             var $alerts = $('.alert');
-
             if ($alerts.length) {
-                // Wait 4 seconds, then fade them out smoothly
-                setTimeout(function () {
-                    $alerts.fadeOut('slow');
-                }, 4000);
+                setTimeout(function () { $alerts.fadeOut('slow'); }, 4000);
             }
         });
     </script>
@@ -151,16 +164,66 @@
         // Ensure only one of the two selects can be chosen
         $(document).ready(function () {
             $('#SelectedBottleId').change(function () {
-                if ($(this).val()) {
-                    $('#SelectedWhiskeyId').val('');
-                }
+                if ($(this).val()) $('#SelectedWhiskeyId').val('');
             });
-
             $('#SelectedWhiskeyId').change(function () {
-                if ($(this).val()) {
-                    $('#SelectedBottleId').val('');
-                }
+                if ($(this).val()) $('#SelectedBottleId').val('');
             });
         });
+    </script>
+
+    <script>
+        var originalPourNumber = '@(Model.Session.Notes.Count + 1)';
+
+        function startEdit(btn) {
+            var item = $(btn).closest('.list-group-item');
+            var noteId    = item.data('note-id');
+            var order     = item.data('order');
+            var rating    = item.data('rating');
+            var notes     = item.data('notes');
+            var whiskeyId = item.data('whiskey-id');
+            var bottleId  = item.data('bottle-id');
+            var pourMl    = item.data('pour-ml');
+
+            // Set hidden edit field
+            $('#EditNoteId').val(noteId);
+
+            // Pre-populate the right selector based on how the note was originally logged
+            if (bottleId) {
+                $('#SelectedBottleId').val(String(bottleId));
+                $('#SelectedWhiskeyId').val('');
+            } else {
+                $('#SelectedWhiskeyId').val(String(whiskeyId));
+                $('#SelectedBottleId').val('');
+            }
+
+            // Pre-populate pour amount (convert ml back to oz, rounded to 1 decimal)
+            $('#PourAmountOz').val(pourMl > 0 ? Math.round((pourMl / 29.5735) * 10) / 10 : '');
+
+            // Set rating and notes
+            $('input[name="NewNote.Rating"][value="' + rating + '"]').prop('checked', true);
+            $('#NewNote_Notes').val(notes);
+
+            // Update UI
+            $('#card-header-title').text('Editing Pour #' + order);
+            $('#submit-btn').text('Save Changes').removeClass('btn-primary').addClass('btn-success');
+            $('#cancel-edit-btn').removeClass('d-none');
+
+            // Scroll to form
+            $('html, body').animate({ scrollTop: $('.card').offset().top - 20 }, 300);
+        }
+
+        function cancelEdit() {
+            $('#EditNoteId').val('');
+            $('#SelectedBottleId').val('');
+            $('#SelectedWhiskeyId').val('');
+            $('#PourAmountOz').val('');
+            $('input[name="NewNote.Rating"][value="3"]').prop('checked', true);
+            $('#NewNote_Notes').val('');
+
+            $('#card-header-title').text('Pour #' + originalPourNumber);
+            $('#submit-btn').text('Log & Pour Next').removeClass('btn-success').addClass('btn-primary');
+            $('#cancel-edit-btn').addClass('d-none');
+        }
     </script>
 }

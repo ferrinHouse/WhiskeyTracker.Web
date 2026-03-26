@@ -32,6 +32,10 @@ public class WizardModel : PageModel
     public int? SelectedBottleId { get; set; }
     [BindProperty]
     public int? SelectedWhiskeyId { get; set; }
+
+    /// When set, the POST updates this existing note instead of creating a new one.
+    [BindProperty]
+    public int? EditNoteId { get; set; }
     
     public SelectList BottleOptions { get; set; } = default!;
     public SelectList WhiskeyOptions { get; set; } = default!;
@@ -53,7 +57,7 @@ public class WizardModel : PageModel
         return Page();
     }
 
-    // POST: Handles the "Log & Pour Next" button
+    // POST: Handles both "Log & Pour Next" and inline editing
     public async Task<IActionResult> OnPostAsync(int sessionId)
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -61,18 +65,95 @@ public class WizardModel : PageModel
         var sessionExists = await _context.TastingSessions.AnyAsync(s => s.Id == sessionId && s.UserId == userId);
         if (!sessionExists) return NotFound();
 
-        // Get my collections
         var myCollectionIds = await _context.CollectionMembers
             .Where(m => m.UserId == userId)
             .Select(m => m.CollectionId)
             .ToListAsync();
+
+        // --- EDIT MODE: update an existing note ---
+        if (EditNoteId.HasValue)
+        {
+            // Remove navigation-property errors that ASP.NET Core can't bind
+            ModelState.Remove("NewNote.TastingSession");
+            ModelState.Remove("NewNote.Whiskey");
+            ModelState.Remove("NewNote.Bottle");
+
+            if (!ModelState.IsValid)
+            {
+                await LoadPageData(sessionId);
+                return Page();
+            }
+
+            var note = await _context.TastingNotes
+                .Include(n => n.Bottle)
+                .FirstOrDefaultAsync(n => n.Id == EditNoteId.Value && n.TastingSessionId == sessionId);
+
+            if (note == null) return NotFound();
+
+            var newPourMl = PourAmountOz.HasValue ? (int)Math.Round(PourAmountOz.Value * 29.5735) : note.PourAmountMl;
+
+            if (SelectedBottleId.HasValue)
+            {
+                var newBottle = await _context.Bottles
+                    .FirstOrDefaultAsync(b => b.Id == SelectedBottleId.Value && b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value));
+
+                if (newBottle != null)
+                {
+                    // Restore old bottle volume if switching to a different bottle
+                    if (note.Bottle != null && note.BottleId != newBottle.Id)
+                    {
+                        note.Bottle.CurrentVolumeMl += note.PourAmountMl;
+                        note.Bottle.Status = note.Bottle.CurrentVolumeMl > 0 ? BottleStatus.Opened : BottleStatus.Empty;
+                        // Apply fresh pour to new bottle
+                        newBottle.CurrentVolumeMl = Math.Max(0, newBottle.CurrentVolumeMl - newPourMl);
+                        if (newBottle.Status == BottleStatus.Full) newBottle.Status = BottleStatus.Opened;
+                    }
+                    else
+                    {
+                        // Same bottle — adjust by difference only
+                        var diff = newPourMl - note.PourAmountMl;
+                        newBottle.CurrentVolumeMl = Math.Max(0, newBottle.CurrentVolumeMl - diff);
+                    }
+                    newBottle.Status = newBottle.CurrentVolumeMl == 0 ? BottleStatus.Empty : BottleStatus.Opened;
+                    note.WhiskeyId = newBottle.WhiskeyId;
+                    note.BottleId = newBottle.Id;
+                }
+                else
+                {
+                    ModelState.AddModelError("SelectedBottleId", "Invalid Bottle Selection (Access Denied).");
+                    await LoadPageData(sessionId);
+                    return Page();
+                }
+            }
+            else if (SelectedWhiskeyId.HasValue)
+            {
+                // Switching to whiskey-only — restore old bottle volume
+                if (note.Bottle != null)
+                {
+                    note.Bottle.CurrentVolumeMl += note.PourAmountMl;
+                    note.Bottle.Status = note.Bottle.CurrentVolumeMl > 0 ? BottleStatus.Opened : BottleStatus.Empty;
+                    note.BottleId = null;
+                }
+                note.WhiskeyId = SelectedWhiskeyId.Value;
+            }
+
+            note.PourAmountMl = newPourMl;
+            note.Rating = NewNote.Rating;
+            note.Notes = NewNote.Notes;
+
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Pour updated!";
+            return RedirectToPage(new { sessionId });
+        }
+
+        // --- ADD MODE: log a new pour ---
 
         if (SelectedBottleId.HasValue)
         {
             // Verify bottle is in one of my collections
             var bottle = await _context.Bottles
                 .FirstOrDefaultAsync(b => b.Id == SelectedBottleId.Value && b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value));
-                
+
             if (bottle != null)
             {
                 NewNote.WhiskeyId = bottle.WhiskeyId;
@@ -137,7 +218,7 @@ public class WizardModel : PageModel
         }
 
         _context.TastingNotes.Add(NewNote);
-        NewNote.UserId = userId; // Ensure consistent usage
+        NewNote.UserId = userId;
         await _context.SaveChangesAsync();
 
         TempData["SuccessMessage"] = "Tasting note added successfully! Ready for the next pour!";
@@ -169,7 +250,7 @@ public class WizardModel : PageModel
 
         var bottles = await _context.Bottles
             .Include(b => b.Whiskey)
-            .Where(b => b.Status != BottleStatus.Empty && b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value))
+            .Where(b => b.Status != BottleStatus.Empty && b.CurrentVolumeMl > 0 && b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value))
             .OrderBy(b => b.Whiskey != null ? b.Whiskey.Name : string.Empty)
             .ToListAsync();
 
