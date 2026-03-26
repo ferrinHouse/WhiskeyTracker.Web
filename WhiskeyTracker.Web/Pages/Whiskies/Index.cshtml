@@ -23,6 +23,20 @@
             <option value="">All Regions</option>
         </select>
     </div>
+    <div class="col-md-3">
+        <label class="form-label fw-bold small text-muted">Bottle Status</label>
+        <select asp-for="Status" asp-items="Html.GetEnumSelectList<WhiskeyTracker.Web.Data.BottleStatus>()" class="form-select">
+            <option value="">Any Status</option>
+        </select>
+    </div>
+    <div class="col-md-4 d-flex align-items-center">
+        <div class="form-check form-switch mt-4">
+            <input class="form-check-input" type="checkbox" asp-for="ShowOnlyMyCollection" id="showOnlyMyCollection">
+            <label class="form-check-label fw-bold small text-muted" for="showOnlyMyCollection">
+                Show My Collection Only
+            </label>
+        </div>
+    </div>
     <div class="col-md-2 d-flex align-items-end">
         <button type="submit" class="btn btn-secondary w-100">Filter</button>
     </div>

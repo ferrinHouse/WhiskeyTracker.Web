@@ -27,6 +27,12 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public string? WhiskeyRegion { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public bool ShowOnlyMyCollection { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public BottleStatus? Status { get; set; }
+
     public async Task OnGetAsync()
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -58,6 +64,26 @@ public class IndexModel : PageModel
         if (!string.IsNullOrEmpty(WhiskeyRegion))
         {
             whiskies = whiskies.Where(x => x.Region == WhiskeyRegion);
+        }
+
+        if (ShowOnlyMyCollection || Status.HasValue)
+        {
+            var myCollectionIds = await _context.CollectionMembers
+                .Where(cm => cm.UserId == userId)
+                .Select(cm => cm.CollectionId)
+                .ToListAsync();
+
+            var ownedWhiskeyIdsQuery = _context.Bottles
+                .Where(b => b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value))
+                .AsQueryable();
+
+            if (Status.HasValue)
+            {
+                ownedWhiskeyIdsQuery = ownedWhiskeyIdsQuery.Where(b => b.Status == Status.Value);
+            }
+
+            var ownedWhiskeyIds = await ownedWhiskeyIdsQuery.Select(b => b.WhiskeyId).Distinct().ToListAsync();
+            whiskies = whiskies.Where(w => ownedWhiskeyIds.Contains(w.Id));
         }
 
         Whiskies = await whiskies.ToListAsync();
