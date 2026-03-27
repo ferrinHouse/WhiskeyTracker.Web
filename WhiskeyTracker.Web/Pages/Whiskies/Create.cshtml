@@ -62,9 +62,24 @@
                     <span asp-validation-for="NewWhiskey.GeneralNotes" class="text-danger"></span>
                 </div>
 
+                <input type="hidden" asp-for="GooglePhotoUrl" id="GooglePhotoUrl" />
+                <input type="hidden" asp-for="GooglePhotoToken" id="GooglePhotoToken" />
                 <div class="form-group mb-3">
                     <label class="form-label">Bottle Image</label>
-                    <input type="file" asp-for="ImageUpload" class="form-control" accept="image/*" />
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="requestGooglePhotosAccess()">
+                            <i class="bi bi-google"></i> Browse Google Photos
+                        </button>
+                        <span class="text-muted small">or upload from device:</span>
+                    </div>
+                    <input type="file" asp-for="ImageUpload" class="form-control" accept="image/*" id="ImageUpload" onchange="clearGooglePhoto()" />
+                    <div id="googlePhotoPreviewContainer" class="mt-2 d-none">
+                        <p class="mb-1 small text-success"><i class="bi bi-check-circle-fill me-1"></i> Google Photo Selected:</p>
+                        <div class="position-relative d-inline-block">
+                            <img id="googlePhotoPreview" src="" style="max-height: 150px;" class="img-thumbnail shadow-sm" />
+                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" onclick="clearGooglePhoto()" aria-label="Remove"><i class="bi bi-x"></i></button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -79,4 +94,22 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_GooglePhotosPicker" />
+    <script>
+        function selectGooglePhoto(fullUrl, previewUrl, token) {
+            document.getElementById('GooglePhotoUrl').value = fullUrl;
+            document.getElementById('GooglePhotoToken').value = token;
+            document.getElementById('googlePhotoPreview').src = previewUrl;
+            document.getElementById('googlePhotoPreviewContainer').classList.remove('d-none');
+            document.getElementById('ImageUpload').value = '';
+        }
+
+        function clearGooglePhoto() {
+            document.getElementById('GooglePhotoUrl').value = '';
+            document.getElementById('GooglePhotoToken').value = '';
+            document.getElementById('googlePhotoPreview').src = '';
+            document.getElementById('googlePhotoPreviewContainer').classList.add('d-none');
+            // Re-enable validation for file if needed or just let it be
+        }
+    </script>
 }

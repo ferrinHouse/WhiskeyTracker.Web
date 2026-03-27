@@ -1,0 +1,198 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var googleClientId = Configuration["Authentication:Google:ClientId"];
+}
+
+<!-- Google Photos Modal -->
+<div class="modal fade" id="googlePhotosModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-google text-primary me-2"></i>Select a Photo from Google Photos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-body-tertiary">
+                <div id="googlePhotosLoading" class="text-center py-5 d-none">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted" id="pickerStatusText">Opening secure Google Photos Picker...</p>
+                    <button class="btn btn-outline-danger btn-sm mt-3" type="button" onclick="cancelPicker()">Cancel Selection</button>
+                </div>
+                <div id="googlePhotosGrid" class="row g-2">
+                    <div class="col-12 text-center text-muted py-4">
+                        <i class="bi bi-shield-check fs-1 text-success mb-2"></i>
+                        <p>Google will securely ask you to select photos.</p>
+                        <p class="small">Waiting for selection...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+    let tokenClient;
+    let accessToken = null;
+    let photosModal;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        photosModal = new bootstrap.Modal(document.getElementById('googlePhotosModal'));
+        
+        setTimeout(() => {
+            if (typeof google !== 'undefined') {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: '@googleClientId',
+                    scope: 'https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
+                    callback: (response) => {
+                        if (response.error !== undefined) {
+                            console.error('OAuth Error:', response);
+                            alert("Failed to authenticate with Google Photos.");
+                            return;
+                        }
+                        accessToken = response.access_token;
+                        startGooglePhotosPicker();
+                    },
+                });
+            }
+        }, 1000); // Give GIS script time to load
+    });
+
+    function requestGooglePhotosAccess() {
+        if (!tokenClient) {
+            alert("Google Identity Services failed to load. Please check your connection.");
+            return;
+        }
+        
+        if (accessToken === null) {
+            // Prompt user for consent with the new scope
+            tokenClient.requestAccessToken({prompt: 'consent'});
+        } else {
+            // Already have token, skip straight to fetch
+            startGooglePhotosPicker();
+        }
+    }
+
+    let pickerPoller;
+    let pickerPopup;
+
+    function cancelPicker() {
+        if (pickerPoller) clearInterval(pickerPoller);
+        if (pickerPopup && !pickerPopup.closed) pickerPopup.close();
+        photosModal.hide();
+    }
+
+    async function startGooglePhotosPicker() {
+        photosModal.show();
+        document.getElementById('googlePhotosGrid').classList.add('d-none');
+        document.getElementById('googlePhotosLoading').classList.remove('d-none');
+        document.getElementById('pickerStatusText').innerText = "Creating secure Google Photos session...";
+
+        try {
+            // 1. Create a Picker Session
+            const res = await fetch('https://photospicker.googleapis.com/v1/sessions', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    pickingConfig: {
+                        maxItemCount: 1
+                    }
+                })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                console.error("Session Creation Error:", errorData);
+                throw new Error("API returned " + res.status);
+            }
+
+            const sessionData = await res.json();
+
+            if (!sessionData.pickerUri) {
+                throw new Error("No pickerUri returned from Google.");
+            }
+
+            // 2. Open the Picker Window with /autoclose parameter
+            document.getElementById('pickerStatusText').innerText = "Please select a photo in the new window...";
+            const pickerUrl = sessionData.pickerUri + '/autoclose';
+            pickerPopup = window.open(pickerUrl, 'GooglePhotosPicker', 'width=800,height=700');
+
+            // 3. Poll the Session to see when they finish
+            if (pickerPoller) clearInterval(pickerPoller);
+            pickerPoller = setInterval(async () => {
+                await pollPickerSession(sessionData.id);
+            }, 2000); // Poll every 2 seconds for snappier response
+
+        } catch (err) {
+            console.error("Picker Flow Error:", err);
+            document.getElementById('googlePhotosLoading').classList.add('d-none');
+            document.getElementById('googlePhotosGrid').classList.remove('d-none');
+            document.getElementById('googlePhotosGrid').innerHTML = '<div class="col-12 text-center text-danger py-4"><i class="bi bi-exclamation-triangle me-2"></i>Error initializing Picker. Check console.</div>';
+        }
+    }
+
+    async function pollPickerSession(sessionId) {
+        try {
+            const res = await fetch(`https://photospicker.googleapis.com/v1/sessions/${sessionId}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            const sData = await res.json();
+
+            // Check if the user has completed the selection.
+            if (sData.mediaItemsSet === true) {
+                clearInterval(pickerPoller);
+                
+                // No manual close needed anymore as /autoclose handles it natively on Google's side
+                
+                document.getElementById('pickerStatusText').innerText = "Photo selected! Fetching secure link...";
+                await fetchSelectedPhoto(sessionId);
+            }
+        } catch (err) {
+            console.error("Polling Error:", err);
+        }
+    }
+
+    async function fetchSelectedPhoto(sessionId) {
+        try {
+            const res = await fetch(`https://photospicker.googleapis.com/v1/mediaItems?sessionId=${sessionId}`, {
+                method: 'GET',
+                headers: { 
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+
+            const data = await res.json();
+
+            if (data.mediaItems && data.mediaItems.length > 0) {
+                const item = data.mediaItems[0];
+                const imgBaseUrl = `${item.mediaFile.baseUrl}=w300-h300-c`;
+                const fullUrl = `${item.mediaFile.baseUrl}=d`;
+                
+                document.getElementById('pickerStatusText').innerText = "Downloading secure preview...";
+
+                // Fetch the image as a blob with Auth header for the UI preview
+                const imgRes = await fetch(imgBaseUrl, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                
+                if (!imgRes.ok) throw new Error("Failed to load image blob: " + imgRes.status);
+                const imgBlob = await imgRes.blob();
+                const objectUrl = URL.createObjectURL(imgBlob);
+
+                // Close modal and call the page script with the Token
+                photosModal.hide();
+                selectGooglePhoto(fullUrl, objectUrl, accessToken);
+            } else {
+                throw new Error("No media items returned.");
+            }
+        } catch (err) {
+            console.error("Fetch Error:", err);
+            document.getElementById('pickerStatusText').innerText = "Failed to download the selected photo.";
+        }
+    }
+
+    // Selection functions are expected to be defined in the parent Page (Create/Edit)
+</script>

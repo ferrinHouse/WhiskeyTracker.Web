@@ -23,6 +23,12 @@ public class EditModel : PageModel
     [BindProperty]
     public IFormFile? ImageUpload { get; set; }
 
+    [BindProperty]
+    public string? GooglePhotoUrl { get; set; }
+
+    [BindProperty]
+    public string? GooglePhotoToken { get; set; }
+
     // "int? id" means the ID is optional in the URL, but we check if it's null
     public async Task<IActionResult> OnGetAsync(int? id)
     {
@@ -50,7 +56,31 @@ public class EditModel : PageModel
             return Page();
         }
 
-        if (ImageUpload != null)
+        if (!string.IsNullOrEmpty(GooglePhotoUrl) && !string.IsNullOrEmpty(GooglePhotoToken))
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GooglePhotoToken);
+            var response = await httpClient.GetAsync(GooglePhotoUrl);
+            if (response.IsSuccessStatusCode)
+            {
+                var imageBytes = await response.Content.ReadAsByteArrayAsync();
+                var uniqueFileName = Guid.NewGuid().ToString() + ".jpg";
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "images");
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+                await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
+                
+                if (!string.IsNullOrEmpty(Whiskey.ImageFileName))
+                {
+                    var oldPath = Path.Combine(uploadsFolder, Whiskey.ImageFileName);
+                    if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+                }
+
+                Whiskey.ImageFileName = uniqueFileName;
+            }
+        }
+        else if (ImageUpload != null)
         {
             var uniqueFileName = Guid.NewGuid().ToString() + "_" + ImageUpload.FileName;
             var uploadsFolder = Path.Combine(_environment.WebRootPath, "images");

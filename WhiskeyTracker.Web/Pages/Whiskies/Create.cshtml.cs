@@ -23,6 +23,12 @@ public class CreateModel : PageModel
     [BindProperty]
     public IFormFile? ImageUpload { get; set; }
 
+    [BindProperty]
+    public string? GooglePhotoUrl { get; set; }
+
+    [BindProperty]
+    public string? GooglePhotoToken { get; set; }
+
     public void OnGet()
     {
         // This runs when you first visit the page
@@ -36,7 +42,24 @@ public class CreateModel : PageModel
             return Page();
         }
 
-        if (ImageUpload != null)
+        if (!string.IsNullOrEmpty(GooglePhotoUrl) && !string.IsNullOrEmpty(GooglePhotoToken))
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GooglePhotoToken);
+            var response = await httpClient.GetAsync(GooglePhotoUrl);
+            if (response.IsSuccessStatusCode)
+            {
+                var imageBytes = await response.Content.ReadAsByteArrayAsync();
+                var uniqueFileName = Guid.NewGuid().ToString() + ".jpg";
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "images");
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+                
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
+                NewWhiskey.ImageFileName = uniqueFileName;
+            }
+        }
+        else if (ImageUpload != null)
         {
             var uniqueFileName = Guid.NewGuid().ToString() + "_" + ImageUpload.FileName;
             var uploadsFolder = Path.Combine(_environment.WebRootPath, "images");
