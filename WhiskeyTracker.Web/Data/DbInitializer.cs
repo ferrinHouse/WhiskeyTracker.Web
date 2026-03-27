@@ -99,6 +99,7 @@ public static class DbInitializer
             new Whiskey 
             { 
                 Name = "Buffalo Trace", 
+                Brand = "Buffalo Trace",
                 Distillery = "Buffalo Trace", 
                 Region = "Kentucky", 
                 Type = "Bourbon", 
@@ -108,6 +109,7 @@ public static class DbInitializer
             new Whiskey 
             { 
                 Name = "Lagavulin 16", 
+                Brand = "Lagavulin",
                 Distillery = "Lagavulin", 
                 Region = "Islay", 
                 Type = "Single Malt", 
@@ -117,6 +119,7 @@ public static class DbInitializer
             new Whiskey 
             { 
                 Name = "Redbreast 12", 
+                Brand = "Redbreast",
                 Distillery = "Midleton", 
                 Region = "Ireland", 
                 Type = "Single Pot Still", 
@@ -126,6 +129,7 @@ public static class DbInitializer
             new Whiskey 
             { 
                 Name = "The Infinity Blend", 
+                Brand = "Custom",
                 Distillery = "Home", 
                 Region = "My House", 
                 Type = "Blend", 

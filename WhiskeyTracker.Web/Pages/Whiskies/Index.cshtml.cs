@@ -52,12 +52,13 @@ public class IndexModel : PageModel
         // Show Whiskies that exist in the DB.
         // Option: Filter to only show whiskies I have? No, library mode usually shows all reference data.
         IQueryable<Whiskey> whiskies = from w in _context.Whiskies
-                                       orderby w.Distillery, w.Name
+                                       orderby w.Brand, w.Name
                                        select w;
 
         if (!string.IsNullOrEmpty(SearchString))
         {
             whiskies = whiskies.Where(s => s.Name.ToLower().Contains(SearchString.ToLower())
+                                        || s.Brand.ToLower().Contains(SearchString.ToLower())
                                         || s.Distillery.ToLower().Contains(SearchString.ToLower()));
         }
 
