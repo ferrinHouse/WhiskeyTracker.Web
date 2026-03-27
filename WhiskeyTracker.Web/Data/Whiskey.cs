@@ -14,6 +14,10 @@ public class Whiskey
 
     [Required]
     [MaxLength(100)]
+    public string Brand { get; set; } = string.Empty; // e.g., "Macallan"
+
+    [Required]
+    [MaxLength(100)]
     public string Distillery { get; set; } = string.Empty; // e.g., "Macallan"
 
     [MaxLength(60)]

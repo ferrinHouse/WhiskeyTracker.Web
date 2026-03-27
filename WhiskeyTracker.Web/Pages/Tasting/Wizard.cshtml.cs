@@ -311,11 +311,11 @@ public class WizardModel : PageModel
         BottleOptions = new SelectList(bottles.Select(b =>
         {
             var whiskeyName = b.Whiskey != null ? b.Whiskey.Name : "Unknown Bottle";
-            var distillery = b.Whiskey != null ? b.Whiskey.Distillery : "Unknown";
+            var brand = b.Whiskey != null ? b.Whiskey.Brand : "Unknown";
 
             return new {
             b.Id,
-            Text = $"{distillery} - {whiskeyName} ({b.Status})"
+            Text = $"{brand} {whiskeyName} ({b.Status})"
             };
         }), "Id", "Text");
 

@@ -524,6 +524,8 @@ namespace WhiskeyTracker.Web.Migrations
 
                     b.HasIndex("TastingSessionId");
 
+                    b.HasIndex("UserId");
+
                     b.HasIndex("WhiskeyId");
 
                     b.ToTable("TastingNotes");
@@ -572,6 +574,8 @@ namespace WhiskeyTracker.Web.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("TastingSessions");
                 });
 
@@ -588,6 +592,11 @@ namespace WhiskeyTracker.Web.Migrations
 
                     b.Property<int?>("Age")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Brand")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("CaskType")
                         .HasMaxLength(100)
@@ -812,6 +821,10 @@ namespace WhiskeyTracker.Web.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("WhiskeyTracker.Web.Data.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
                     b.HasOne("WhiskeyTracker.Web.Data.Whiskey", "Whiskey")
                         .WithMany("TastingNotes")
                         .HasForeignKey("WhiskeyId")
@@ -821,6 +834,8 @@ namespace WhiskeyTracker.Web.Migrations
                     b.Navigation("Bottle");
 
                     b.Navigation("TastingSession");
+
+                    b.Navigation("User");
 
                     b.Navigation("Whiskey");
                 });
@@ -842,6 +857,15 @@ namespace WhiskeyTracker.Web.Migrations
                     b.Navigation("Tag");
 
                     b.Navigation("TastingNote");
+                });
+
+            modelBuilder.Entity("WhiskeyTracker.Web.Data.TastingSession", b =>
+                {
+                    b.HasOne("WhiskeyTracker.Web.Data.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("WhiskeyTracker.Web.Data.Bottle", b =>

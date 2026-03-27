@@ -30,6 +30,11 @@
             </div>
 
             <div class="form-group mb-3">
+                <label asp-for="Whiskey.Brand" class="form-label"></label>
+                <input asp-for="Whiskey.Brand" class="form-control" />
+                <span asp-validation-for="Whiskey.Brand" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
                 <label asp-for="Whiskey.Distillery" class="form-label"></label>
                 <input asp-for="Whiskey.Distillery" class="form-control" />
                 <span asp-validation-for="Whiskey.Distillery" class="text-danger"></span>

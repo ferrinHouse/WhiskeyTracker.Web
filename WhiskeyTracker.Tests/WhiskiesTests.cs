@@ -39,21 +39,42 @@ public class WhiskiesTests : TestBase
     public async Task Index_FiltersBySearchString()
     {
         using var context = GetInMemoryContext();
-        context.Whiskies.Add(new Whiskey { Name = "Ardbeg", Distillery = "Ardbeg" });
-        context.Whiskies.Add(new Whiskey { Name = "Balvenie", Distillery = "Balvenie" });
+        context.Whiskies.Add(new Whiskey { Name = "Ardbeg", Distillery = "Ardbeg", Brand = "Ardbeg Brand" });
+        context.Whiskies.Add(new Whiskey { Name = "Balvenie", Distillery = "Balvenie", Brand = "William Grant" });
         await context.SaveChangesAsync();
 
+        var legacyService = new WhiskeyTracker.Web.Services.LegacyMigrationService(context);
+        
+        // Search matches Brand
+        var pageModel = new IndexModel(context, legacyService) { SearchString = "William" };
+        SetMockUser(pageModel, "test-user");
+        await pageModel.OnGetAsync();
 
+        Assert.Single(pageModel.Whiskies);
+        Assert.Equal("Balvenie", pageModel.Whiskies[0].Name);
+    }
+
+    [Fact]
+    public async Task Index_SortsByBrandThenName_ByDefault()
+    {
+        using var context = GetInMemoryContext();
+        context.Whiskies.Add(new Whiskey { Name = "Zephyr", Brand = "Alpha Group" });
+        context.Whiskies.Add(new Whiskey { Name = "Aero", Brand = "Alpha Group" });
+        context.Whiskies.Add(new Whiskey { Name = "Basic Batch", Brand = "Zeta Distillers" });
+        await context.SaveChangesAsync();
 
         var legacyService = new WhiskeyTracker.Web.Services.LegacyMigrationService(context);
-        var pageModel = new IndexModel(context, legacyService) { SearchString = "Ard" };
+        var pageModel = new IndexModel(context, legacyService);
         SetMockUser(pageModel, "test-user");
 
         await pageModel.OnGetAsync();
 
-        Assert.Single(pageModel.Whiskies);
-        Assert.Equal("Ardbeg", pageModel.Whiskies[0].Name);
+        Assert.Equal(3, pageModel.Whiskies.Count);
+        Assert.Equal("Aero", pageModel.Whiskies[0].Name);
+        Assert.Equal("Zephyr", pageModel.Whiskies[1].Name);
+        Assert.Equal("Basic Batch", pageModel.Whiskies[2].Name);
     }
+
 
     [Fact]
     public async Task Index_FiltersByRegion()
