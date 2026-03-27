@@ -43,4 +43,8 @@ body {
 
 .transition-all {
     transition: all 0.3s ease-in-out;
-}
+}
+
+/* Theme-aware logo switching */
+[data-bs-theme="dark"] .logo-light { display: none; }
+[data-bs-theme="light"] .logo-dark { display: none; }

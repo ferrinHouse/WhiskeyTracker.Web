@@ -41,6 +41,8 @@ Set-Secrets.ps1
 # Ignore user-uploaded images, but keep the folder structure and specific static assets
 WhiskeyTracker.Web/wwwroot/images/*
 !WhiskeyTracker.Web/wwwroot/images/.gitkeep
+!WhiskeyTracker.Web/wwwroot/images/logo-light.png
+!WhiskeyTracker.Web/wwwroot/images/logo-dark.png
 # If you have a specific default image you want to track, uncomment the line below:
 # !WhiskeyTracker.Web/wwwroot/images/default-bottle.jpg
 

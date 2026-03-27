@@ -2,9 +2,45 @@
 @using Microsoft.EntityFrameworkCore.Metadata.Internal
 @model IndexModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = User.Identity?.IsAuthenticated == true ? "Dashboard" : "Welcome";
 }
 
+@if (User.Identity?.IsAuthenticated != true)
+{
+    <div class="text-center py-5">
+        <img src="~/images/logo-light.png" alt="Evolving Pour" height="120" class="logo-light mb-4" />
+        <img src="~/images/logo-dark.png" alt="Evolving Pour" height="120" class="logo-dark mb-4" />
+        <h1 class="display-4 fw-bold">Evolving Pour</h1>
+        <p class="lead text-muted mb-4">Your personal whiskey inventory and tasting journal.</p>
+        <p class="text-muted mb-5 mx-auto" style="max-width: 540px;">
+            Track your collection, log tasting notes, run guided sessions with friends,
+            and build a record of every dram you've explored.
+        </p>
+        <a asp-page="/Account/Login" asp-area="Identity" class="btn btn-primary btn-lg px-5">Sign In to Get Started</a>
+        <div class="mt-5 row justify-content-center g-4 text-start" style="max-width: 720px; margin: auto;">
+            <div class="col-md-4">
+                <div class="p-4 border rounded bg-body-tertiary h-100">
+                    <h5 class="fw-bold">Bottle Inventory</h5>
+                    <p class="text-muted small mb-0">Track every bottle — full, opened, or finished — with purchase details and images.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-4 border rounded bg-body-tertiary h-100">
+                    <h5 class="fw-bold">Tasting Sessions</h5>
+                    <p class="text-muted small mb-0">Run guided tasting sessions solo or with a group and capture notes in real time.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-4 border rounded bg-body-tertiary h-100">
+                    <h5 class="fw-bold">Shared Collections</h5>
+                    <p class="text-muted small mb-0">Invite friends to join your collection and explore whiskies together.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
 <div class="text-center mb-5">
     <h1 class="display-4 fw-bold">Whiskey Tracker</h1>
     <p class="lead text-muted">Catalog your collection. Journal your tastings.</p>
@@ -151,3 +187,4 @@ else
         </div>
     </div>
 </div>
+} @* end else (authenticated) *@

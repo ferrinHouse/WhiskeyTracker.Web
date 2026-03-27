@@ -18,7 +18,10 @@
                 <button class="navbar-toggler me-3 border-0 px-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <a class="navbar-brand me-auto" asp-area="" asp-page="/Index">WhiskeyTracker</a>
+                <a class="navbar-brand me-auto" asp-area="" asp-page="/Index">
+                    <img src="~/images/logo-light.png" alt="Evolving Pour" height="36" class="logo-light" />
+                    <img src="~/images/logo-dark.png" alt="Evolving Pour" height="36" class="logo-dark" />
+                </a>
                 
                 <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
                     <div class="offcanvas-header border-bottom">
@@ -81,7 +84,9 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2026 - WhiskeyTracker.Web - <a asp-area="" asp-page="/Privacy">Privacy</a>
+            &copy; 2026 - WhiskeyTracker.Web -
+            <a asp-area="" asp-page="/Privacy">Privacy</a> &middot;
+            <a asp-area="" asp-page="/Terms">Terms</a>
         </div>
     </footer>
 

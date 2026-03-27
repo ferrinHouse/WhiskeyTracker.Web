@@ -40,6 +40,9 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/");
     options.Conventions.AuthorizeFolder("/Admin", "RequireAdminRole");
     options.Conventions.AllowAnonymousToFolder("/.well-known");
+    options.Conventions.AllowAnonymousToPage("/Index");
+    options.Conventions.AllowAnonymousToPage("/Privacy");
+    options.Conventions.AllowAnonymousToPage("/Terms");
 });
 
 builder.Services.AddAuthorization(options =>

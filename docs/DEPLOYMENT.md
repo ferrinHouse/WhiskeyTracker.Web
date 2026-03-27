@@ -44,7 +44,7 @@ EmailSettings__Password=your_app_password
 
 ### 🌍 Networking (NodePort)
 The application is exposed via a **NodePort** service on port `30080`.
-Typically, you will use a reverse proxy (like Nginx Proxy Manager) to forward traffic from `whiskeytracker.yourdomain.com` to `NODE_IP:30080`.
+Typically, you will use a reverse proxy (like Nginx Proxy Manager) to forward traffic from `whiskeytracker.ferrinhouse.org` to `NODE_IP:30080`.
 
 ### 💾 Storage Configuration
 Storage is defined in `k8s/storage.yaml`.
