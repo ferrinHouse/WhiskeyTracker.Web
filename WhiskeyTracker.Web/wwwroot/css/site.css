@@ -47,4 +47,75 @@ body {
 
 /* Theme-aware logo switching */
 [data-bs-theme="dark"] .logo-light { display: none; }
-[data-bs-theme="light"] .logo-dark { display: none; }
+[data-bs-theme="light"] .logo-dark { display: none; }
+
+/* ── Brand Color Palette ── */
+[data-bs-theme="light"] {
+    --bs-body-bg: #F7F4EC;
+    --bs-body-color: #4A3C2B;
+    --bs-secondary-color: #A5988D;
+    --bs-tertiary-bg: #EDE8DC;
+    --bs-primary: #C0945E;
+    --bs-primary-rgb: 192, 148, 94;
+    --bs-link-color: #C0945E;
+    --bs-link-hover-color: #a87a48;
+}
+
+[data-bs-theme="light"] .btn-primary {
+    --bs-btn-bg: #C0945E;
+    --bs-btn-border-color: #C0945E;
+    --bs-btn-hover-bg: #a87a48;
+    --bs-btn-hover-border-color: #a87a48;
+    --bs-btn-active-bg: #a87a48;
+    --bs-btn-active-border-color: #a87a48;
+    --bs-btn-color: #fff;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-active-color: #fff;
+}
+
+[data-bs-theme="light"] .btn-outline-primary {
+    --bs-btn-color: #C0945E;
+    --bs-btn-border-color: #C0945E;
+    --bs-btn-hover-bg: #C0945E;
+    --bs-btn-hover-border-color: #C0945E;
+    --bs-btn-hover-color: #fff;
+}
+
+[data-bs-theme="light"] .btn:focus, [data-bs-theme="light"] .form-control:focus, [data-bs-theme="light"] .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(192, 148, 94, 0.5);
+}
+
+[data-bs-theme="dark"] {
+    --bs-body-bg: #2C3035;
+    --bs-body-color: #F2EFE7;
+    --bs-secondary-color: #A0A6AB;
+    --bs-tertiary-bg: #363b41;
+    --bs-primary: #C0945E;
+    --bs-primary-rgb: 192, 148, 94;
+    --bs-link-color: #C0945E;
+    --bs-link-hover-color: #d4a97a;
+}
+
+[data-bs-theme="dark"] .btn-primary {
+    --bs-btn-bg: #C0945E;
+    --bs-btn-border-color: #C0945E;
+    --bs-btn-hover-bg: #a87a48;
+    --bs-btn-hover-border-color: #a87a48;
+    --bs-btn-active-bg: #a87a48;
+    --bs-btn-active-border-color: #a87a48;
+    --bs-btn-color: #fff;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-active-color: #fff;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary {
+    --bs-btn-color: #C0945E;
+    --bs-btn-border-color: #C0945E;
+    --bs-btn-hover-bg: #C0945E;
+    --bs-btn-hover-border-color: #C0945E;
+    --bs-btn-hover-color: #fff;
+}
+
+[data-bs-theme="dark"] .btn:focus, [data-bs-theme="dark"] .form-control:focus, [data-bs-theme="dark"] .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem #2C3035, 0 0 0 0.25rem rgba(192, 148, 94, 0.5);
+}
