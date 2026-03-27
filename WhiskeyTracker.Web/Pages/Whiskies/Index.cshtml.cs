@@ -27,11 +27,29 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public string? WhiskeyRegion { get; set; }
 
+    public SelectList? Types { get; set; }
+    [BindProperty(SupportsGet = true)]
+    public string? WhiskeyType { get; set; }
+
+    public SelectList? Brands { get; set; }
+    [BindProperty(SupportsGet = true)]
+    public string? WhiskeyBrand { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public List<BottleStatus> Statuses { get; set; } = new();
+
     [BindProperty(SupportsGet = true)]
     public bool ShowOnlyMyCollection { get; set; }
 
-    [BindProperty(SupportsGet = true)]
-    public BottleStatus? Status { get; set; }
+    public bool HasFilterActive()
+    {
+        return !string.IsNullOrEmpty(SearchString) || 
+               !string.IsNullOrEmpty(WhiskeyRegion) || 
+               !string.IsNullOrEmpty(WhiskeyType) || 
+               !string.IsNullOrEmpty(WhiskeyBrand) || 
+               Statuses.Any() || 
+               ShowOnlyMyCollection;
+    }
 
     public async Task OnGetAsync()
     {
@@ -48,6 +66,20 @@ public class IndexModel : PageModel
                                         .Select(w => w.Region)
                                         .Distinct();
         Regions = new SelectList(await genreQuery.ToListAsync());
+
+        IQueryable<string> typeQuery = _context.Whiskies
+                                        .Where(w => !string.IsNullOrEmpty(w.Type))
+                                        .OrderBy(w => w.Type)
+                                        .Select(w => w.Type)
+                                        .Distinct();
+        Types = new SelectList(await typeQuery.ToListAsync());
+
+        IQueryable<string> brandQuery = _context.Whiskies
+                                        .Where(w => !string.IsNullOrEmpty(w.Brand))
+                                        .OrderBy(w => w.Brand)
+                                        .Select(w => w.Brand)
+                                        .Distinct();
+        Brands = new SelectList(await brandQuery.ToListAsync());
 
         // Show Whiskies that exist in the DB.
         // Option: Filter to only show whiskies I have? No, library mode usually shows all reference data.
@@ -67,7 +99,17 @@ public class IndexModel : PageModel
             whiskies = whiskies.Where(x => x.Region == WhiskeyRegion);
         }
 
-        if (ShowOnlyMyCollection || Status.HasValue)
+        if (!string.IsNullOrEmpty(WhiskeyType))
+        {
+            whiskies = whiskies.Where(x => x.Type == WhiskeyType);
+        }
+
+        if (!string.IsNullOrEmpty(WhiskeyBrand))
+        {
+            whiskies = whiskies.Where(x => x.Brand == WhiskeyBrand);
+        }
+
+        if (ShowOnlyMyCollection || Statuses.Any())
         {
             var myCollectionIds = await _context.CollectionMembers
                 .Where(cm => cm.UserId == userId)
@@ -78,9 +120,9 @@ public class IndexModel : PageModel
                 .Where(b => b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value))
                 .AsQueryable();
 
-            if (Status.HasValue)
+            if (Statuses.Any())
             {
-                ownedWhiskeyIdsQuery = ownedWhiskeyIdsQuery.Where(b => b.Status == Status.Value);
+                ownedWhiskeyIdsQuery = ownedWhiskeyIdsQuery.Where(b => Statuses.Contains(b.Status));
             }
 
             var ownedWhiskeyIds = await ownedWhiskeyIdsQuery.Select(b => b.WhiskeyId).Distinct().ToListAsync();

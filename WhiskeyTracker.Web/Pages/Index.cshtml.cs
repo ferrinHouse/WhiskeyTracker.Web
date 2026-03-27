@@ -39,7 +39,7 @@ public class IndexModel : PageModel
             .CountAsync();
 
         OpenBottles = await _context.Bottles
-            .CountAsync(b => b.Status == BottleStatus.Opened && b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value));
+            .CountAsync(b => (b.Status == BottleStatus.Opened || b.Status == BottleStatus.Full) && b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value));
 
         TotalSessions = await _context.TastingSessions
             .CountAsync(s => s.UserId == userId || s.Participants.Any(p => p.UserId == userId));

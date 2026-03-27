@@ -7,27 +7,55 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>My Whiskey Library</h1>
-    <a asp-page="./Create" class="btn btn-primary">
-        + Log New Whiskey
-    </a>
+    <div>
+        <button class="btn btn-outline-secondary me-2" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+            <i class="bi bi-funnel"></i> Toggle Filters
+        </button>
+        <a asp-page="./Create" class="btn btn-primary">
+            + Log New Whiskey
+        </a>
+    </div>
 </div>
 
+<div class="collapse @(Model.HasFilterActive() ? "show" : "")" id="filterCollapse">
+
 <form class="row g-3 mb-4 p-3 bg-body-tertiary rounded shadow-sm" method="get">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label fw-bold small text-muted">Search</label>
         <input type="text" asp-for="SearchString" class="form-control bg-body text-body" placeholder="Distiller or Name..." />
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <label class="form-label fw-bold small text-muted">Region</label>
         <select asp-for="WhiskeyRegion" asp-items="Model.Regions" class="form-select bg-body text-body">
             <option value="">All Regions</option>
         </select>
     </div>
-    <div class="col-md-3">
-        <label class="form-label fw-bold small text-muted">Bottle Status</label>
-        <select asp-for="Status" asp-items="Html.GetEnumSelectList<WhiskeyTracker.Web.Data.BottleStatus>()" class="form-select bg-body text-body">
-            <option value="">Any Status</option>
+    <div class="col-md-2">
+        <label class="form-label fw-bold small text-muted">Type</label>
+        <select asp-for="WhiskeyType" asp-items="Model.Types" class="form-select bg-body text-body">
+            <option value="">All Types</option>
         </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label fw-bold small text-muted">Brand / Distiller</label>
+        <select asp-for="WhiskeyBrand" asp-items="Model.Brands" class="form-select bg-body text-body">
+            <option value="">All Brands</option>
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-secondary w-100">Apply Filters</button>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="col-md-5">
+        <label class="form-label fw-bold small text-muted d-block">Bottle Status</label>
+        @foreach (var status in Enum.GetValues<WhiskeyTracker.Web.Data.BottleStatus>())
+        {
+            <div class="form-check form-check-inline mt-2">
+                <input class="form-check-input" type="checkbox" name="Statuses" value="@status" id="status_@status" @(Model.Statuses.Contains(status) ? "checked" : "")>
+                <label class="form-check-label" for="status_@status">@status</label>
+            </div>
+        }
     </div>
     <div class="col-md-4 d-flex align-items-center">
         <div class="form-check form-switch mt-4">
@@ -37,13 +65,11 @@
             </label>
         </div>
     </div>
-    <div class="col-md-2 d-flex align-items-end">
-        <button type="submit" class="btn btn-secondary w-100">Filter</button>
-    </div>
-    <div class="col-md-2 d-flex align-items-end">
-        <a asp-page="./Index" class="btn btn-outline-secondary w-100">Reset</a>
+    <div class="col-md-3 d-flex align-items-end justify-content-end">
+        <a asp-page="./Index" class="btn btn-outline-secondary w-100">Reset Filters</a>
     </div>
 </form>
+</div>
 @if (Model.Whiskies.Count == 0)
 {
     <div class="alert alert-info">
@@ -91,6 +117,10 @@ else
                     <td>
                         <a asp-page="./Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Edit</a>
                         <a asp-page="./AddBottle" asp-route-id="@item.Id" class="btn btn-sm btn-outline-success">+ Bottle</a>
+                        <form method="post" asp-page="/Tasting/Create" class="d-inline">
+                            <input type="hidden" name="whiskeyId" value="@item.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-primary" style="position: relative; z-index: 2;">Taste</button>
+                        </form>
                         <a asp-page="./Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
                     </td>
                 </tr>

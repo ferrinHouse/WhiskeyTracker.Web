@@ -68,7 +68,7 @@ public class WhiskeyLibraryTests : TestBase
         var legacyService = new WhiskeyTracker.Web.Services.LegacyMigrationService(context);
         var pageModel = new IndexModel(context, legacyService);
         SetMockUser(pageModel, userId);
-        pageModel.Status = BottleStatus.Opened;
+        pageModel.Statuses.Add(BottleStatus.Opened);
 
         // ACT
         await pageModel.OnGetAsync();
