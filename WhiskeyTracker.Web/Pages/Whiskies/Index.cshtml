@@ -19,7 +19,8 @@
 
 <div class="collapse @(Model.HasFilterActive() ? "show" : "")" id="filterCollapse">
 
-<form class="row g-3 mb-4 p-3 bg-body-tertiary rounded shadow-sm" method="get">
+<form id="filterForm" class="row g-3 mb-4 p-3 bg-body-tertiary rounded shadow-sm" method="get">
+    <input type="hidden" asp-for="SortOrder" id="SortOrderInput" />
     <div class="col-md-3">
         <label class="form-label fw-bold small text-muted">Search</label>
         <input type="text" asp-for="SearchString" class="form-control bg-body text-body" placeholder="Distiller or Name..." />
@@ -89,9 +90,26 @@ else
         <thead class="table-dark">
             <tr>
                 <th>Image</th>
-                <th>Brand</th>
-                <th>Name / Expression</th>
-                <th>Region</th>
+                <th style="cursor: pointer; user-select: none;" onclick="document.getElementById('SortOrderInput').value='@Model.BrandSort'; document.getElementById('filterForm').submit();">
+                    Brand
+                    @if (Model.SortOrder == "Brand" || string.IsNullOrEmpty(Model.SortOrder)) { <i class="bi bi-caret-up-fill small ms-1"></i> }
+                    else if (Model.SortOrder == "brand_desc") { <i class="bi bi-caret-down-fill small ms-1"></i> }
+                </th>
+                <th style="cursor: pointer; user-select: none;" onclick="document.getElementById('SortOrderInput').value='@Model.NameSort'; document.getElementById('filterForm').submit();">
+                    Name / Expression
+                    @if (Model.SortOrder == "Name") { <i class="bi bi-caret-up-fill small ms-1"></i> }
+                    else if (Model.SortOrder == "name_desc") { <i class="bi bi-caret-down-fill small ms-1"></i> }
+                </th>
+                <th style="cursor: pointer; user-select: none;" onclick="document.getElementById('SortOrderInput').value='@Model.TypeSort'; document.getElementById('filterForm').submit();">
+                    Type
+                    @if (Model.SortOrder == "Type") { <i class="bi bi-caret-up-fill small ms-1"></i> }
+                    else if (Model.SortOrder == "type_desc") { <i class="bi bi-caret-down-fill small ms-1"></i> }
+                </th>
+                <th style="cursor: pointer; user-select: none;" onclick="document.getElementById('SortOrderInput').value='@Model.RegionSort'; document.getElementById('filterForm').submit();">
+                    Region
+                    @if (Model.SortOrder == "Region") { <i class="bi bi-caret-up-fill small ms-1"></i> }
+                    else if (Model.SortOrder == "region_desc") { <i class="bi bi-caret-down-fill small ms-1"></i> }
+                </th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -113,6 +131,7 @@ else
                     </td>
                     <td class="fw-bold">@item.Brand</td>
                     <td>@item.Name</td>
+                    <td>@item.Type</td>
                     <td>@item.Region</td>
                     <td>
                         <a asp-page="./Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Edit</a>

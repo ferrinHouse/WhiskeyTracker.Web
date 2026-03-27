@@ -41,6 +41,14 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public bool ShowOnlyMyCollection { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public string? SortOrder { get; set; }
+
+    public string BrandSort { get; set; } = string.Empty;
+    public string NameSort { get; set; } = string.Empty;
+    public string TypeSort { get; set; } = string.Empty;
+    public string RegionSort { get; set; } = string.Empty;
+
     public bool HasFilterActive()
     {
         return !string.IsNullOrEmpty(SearchString) || 
@@ -60,6 +68,11 @@ public class IndexModel : PageModel
         {
             await _legacyMigrationService.EnsureUserHasCollectionAsync(userId);
         }
+
+        BrandSort = string.IsNullOrEmpty(SortOrder) || SortOrder == "Brand" ? "brand_desc" : "Brand";
+        NameSort = SortOrder == "Name" ? "name_desc" : "Name";
+        TypeSort = SortOrder == "Type" ? "type_desc" : "Type";
+        RegionSort = SortOrder == "Region" ? "region_desc" : "Region";
         
         IQueryable<string> genreQuery = _context.Whiskies
                                         .OrderBy(w => w.Region)
@@ -128,6 +141,18 @@ public class IndexModel : PageModel
             var ownedWhiskeyIds = await ownedWhiskeyIdsQuery.Select(b => b.WhiskeyId).Distinct().ToListAsync();
             whiskies = whiskies.Where(w => ownedWhiskeyIds.Contains(w.Id));
         }
+
+        whiskies = SortOrder switch
+        {
+            "brand_desc" => whiskies.OrderByDescending(w => w.Brand).ThenBy(w => w.Name),
+            "Name" => whiskies.OrderBy(w => w.Name).ThenBy(w => w.Brand),
+            "name_desc" => whiskies.OrderByDescending(w => w.Name).ThenBy(w => w.Brand),
+            "Type" => whiskies.OrderBy(w => w.Type).ThenBy(w => w.Brand).ThenBy(w => w.Name),
+            "type_desc" => whiskies.OrderByDescending(w => w.Type).ThenBy(w => w.Brand).ThenBy(w => w.Name),
+            "Region" => whiskies.OrderBy(w => w.Region).ThenBy(w => w.Brand).ThenBy(w => w.Name),
+            "region_desc" => whiskies.OrderByDescending(w => w.Region).ThenBy(w => w.Brand).ThenBy(w => w.Name),
+            _ => whiskies.OrderBy(w => w.Brand).ThenBy(w => w.Name),
+        };
 
         Whiskies = await whiskies.ToListAsync();
     }
