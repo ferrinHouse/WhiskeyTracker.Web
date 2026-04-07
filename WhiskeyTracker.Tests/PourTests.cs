@@ -72,7 +72,7 @@ public class PourTests
         // ASSERT
         Assert.IsType<PageResult>(result);
         Assert.Equal(sourceBottle.Id, pageModel.SourceBottle.Id);
-        Assert.Equal(100, pageModel.PourAmountMl); 
+        Assert.Equal(3.4, pageModel.PourAmountOz);
 
         // Check the dropdown list - Should only have the ONE open infinity bottle
         var options = Assert.IsType<SelectList>(pageModel.InfinityBottles);
@@ -108,7 +108,7 @@ public class PourTests
         {
             SourceBottleId = source.Id,
             TargetInfinityBottleId = target.Id,
-            PourAmountMl = 40
+            PourAmountOz = 1.35 // 1.35 oz * 29.5735 = ~40ml
         };
         SetMockUser(pageModel, "test-user");
 
@@ -126,16 +126,129 @@ public class PourTests
         var dbTarget = await context.Bottles.AsNoTracking().FirstOrDefaultAsync(b => b.Id == target.Id);
         Assert.NotNull(dbSource);
         Assert.NotNull(dbTarget);
-        
+
         // Adjusted expectation to match current behavior (Bottle is emptied)
-        Assert.Equal(0, dbSource.CurrentVolumeMl); 
-        Assert.Equal(540, dbTarget.CurrentVolumeMl); // 500 + 40
-        Assert.Equal(BottleStatus.Empty, dbSource.Status); 
+        Assert.Equal(0, dbSource.CurrentVolumeMl);
+        Assert.Equal(540, dbTarget.CurrentVolumeMl); // 500 + 40ml (1.35 oz rounds to 40ml)
+        Assert.Equal(BottleStatus.Empty, dbSource.Status);
 
         // 3. Check History Log
         var log = await context.BlendComponents.FirstOrDefaultAsync();
         Assert.NotNull(log);
         Assert.Equal(40, log.AmountAddedMl);
+    }
+
+    [Fact]
+    public async Task OnGet_ReturnsNotFound_WhenUserLacksAccess()
+    {
+        // ARRANGE
+        using var context = GetInMemoryContext();
+        var whiskey = new Whiskey { Name = "Bourbon" };
+        context.Whiskies.Add(whiskey);
+        await context.SaveChangesAsync();
+
+        var collection = new Collection { Id = 1, Name = "Private Collection" };
+        context.Collections.Add(collection);
+        context.CollectionMembers.Add(new CollectionMember { CollectionId = 1, UserId = "owner-user", Role = CollectionRole.Owner });
+
+        var bottle = new Bottle { WhiskeyId = whiskey.Id, CurrentVolumeMl = 200, Status = BottleStatus.Opened, CollectionId = 1 };
+        context.Bottles.Add(bottle);
+        await context.SaveChangesAsync();
+
+        var pageModel = new PourModel(context, new FakeTimeProvider(DateTimeOffset.UtcNow));
+        SetMockUser(pageModel, "other-user");
+
+        // ACT
+        var result = await pageModel.OnGetAsync(bottle.Id);
+
+        // ASSERT
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task OnGet_ReturnsNotFound_WhenBottleDoesNotExist()
+    {
+        // ARRANGE
+        using var context = GetInMemoryContext();
+        var pageModel = new PourModel(context, new FakeTimeProvider(DateTimeOffset.UtcNow));
+        SetMockUser(pageModel, "test-user");
+
+        // ACT
+        var result = await pageModel.OnGetAsync(99999);
+
+        // ASSERT
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task OnPost_ReturnsPage_WhenModelStateIsInvalid()
+    {
+        // ARRANGE
+        using var context = GetInMemoryContext();
+        var whiskey = new Whiskey { Name = "Bourbon" };
+        context.Whiskies.Add(whiskey);
+        await context.SaveChangesAsync();
+
+        var collection = new Collection { Id = 1, Name = "Test Bar" };
+        context.Collections.Add(collection);
+        context.CollectionMembers.Add(new CollectionMember { CollectionId = 1, UserId = "test-user", Role = CollectionRole.Owner });
+
+        var source = new Bottle { WhiskeyId = whiskey.Id, CurrentVolumeMl = 100, Status = BottleStatus.Opened, CollectionId = 1 };
+        context.Bottles.Add(source);
+        await context.SaveChangesAsync();
+
+        var pageModel = new PourModel(context, new FakeTimeProvider(DateTimeOffset.UtcNow))
+        {
+            SourceBottleId = source.Id,
+            TargetInfinityBottleId = 0,
+            PourAmountOz = 0 // invalid: below minimum of 0.1
+        };
+        SetMockUser(pageModel, "test-user");
+        pageModel.ModelState.AddModelError("PourAmountOz", "Please enter a valid pour amount between 0.1 and 25 oz.");
+
+        // ACT
+        var result = await pageModel.OnPostAsync();
+
+        // ASSERT
+        Assert.IsType<PageResult>(result);
+        // No DB changes should have occurred
+        var dbSource = await context.Bottles.AsNoTracking().FirstAsync(b => b.Id == source.Id);
+        Assert.Equal(100, dbSource.CurrentVolumeMl);
+    }
+
+    [Fact]
+    public async Task OnPost_ReturnsNotFound_WhenSourceBottleNotOwned()
+    {
+        // ARRANGE
+        using var context = GetInMemoryContext();
+        var whiskey = new Whiskey { Name = "Bourbon" };
+        context.Whiskies.Add(whiskey);
+        await context.SaveChangesAsync();
+
+        var otherCollection = new Collection { Id = 1, Name = "Someone Else's Bar" };
+        context.Collections.Add(otherCollection);
+        context.CollectionMembers.Add(new CollectionMember { CollectionId = 1, UserId = "other-user", Role = CollectionRole.Owner });
+
+        var source = new Bottle { WhiskeyId = whiskey.Id, CurrentVolumeMl = 100, Status = BottleStatus.Opened, CollectionId = 1 };
+        context.Bottles.Add(source);
+        await context.SaveChangesAsync();
+
+        var pageModel = new PourModel(context, new FakeTimeProvider(DateTimeOffset.UtcNow))
+        {
+            SourceBottleId = source.Id,
+            TargetInfinityBottleId = 0,
+            PourAmountOz = 1.5
+        };
+        SetMockUser(pageModel, "attacker-user"); // not a member of any collection
+
+        // ACT
+        var result = await pageModel.OnPostAsync();
+
+        // ASSERT
+        Assert.IsType<NotFoundResult>(result);
+        // Source bottle should be untouched
+        var dbSource = await context.Bottles.AsNoTracking().FirstAsync(b => b.Id == source.Id);
+        Assert.Equal(100, dbSource.CurrentVolumeMl);
     }
 
     [Fact]
@@ -160,7 +273,7 @@ public class PourTests
         {
             SourceBottleId = source.Id,
             TargetInfinityBottleId = target.Id,
-            PourAmountMl = 50 // Pouring everything
+            PourAmountOz = 1.7 // 1.7 oz * 29.5735 = ~50ml
         };
         SetMockUser(pageModel, "test-user");
 

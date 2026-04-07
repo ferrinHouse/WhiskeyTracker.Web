@@ -25,8 +25,9 @@ public class PourModel : PageModel
     public int TargetInfinityBottleId { get; set; }
 
     [BindProperty]
-    [Display(Name = "Amount to Pour (ml)")]
-    public int PourAmountMl { get; set; }
+    [Display(Name = "Pour Amount (oz)")]
+    [Range(0.1, 25.0, ErrorMessage = "Please enter a valid pour amount between 0.1 and 25 oz.")]
+    public double PourAmountOz { get; set; } = 2.0;
 
     public Bottle SourceBottle { get; set; } = default!;
     public SelectList InfinityBottles { get; set; } = default!;
@@ -49,7 +50,7 @@ public class PourModel : PageModel
         SourceBottle = bottle;
         SourceBottleId = bottle.Id;
 
-        PourAmountMl = bottle.CurrentVolumeMl;
+        PourAmountOz = Math.Round(bottle.CurrentVolumeMl / 29.5735, 1);
 
         // Find Infinity Bottles in ANY collection I am a member of
         // This allows cross-collection pouring? Maybe restricting to SAME collection is safer?
@@ -83,25 +84,37 @@ public class PourModel : PageModel
             .Include(b => b.Whiskey)
             .FirstOrDefaultAsync(b => b.Id == SourceBottleId && b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value));
 
+        if (source == null) return NotFound();
+
+        if (!ModelState.IsValid)
+        {
+            SourceBottle = source;
+            var infinityBottles = await _context.Bottles
+                .Include(b => b.Whiskey)
+                .Where(b => b.IsInfinityBottle && b.Id != source.Id && b.Status != BottleStatus.Full && b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value))
+                .ToListAsync();
+            InfinityBottles = new SelectList(infinityBottles, "Id", "Whiskey.Name");
+            return Page();
+        }
+
         var target = await _context.Bottles
             .Include(b => b.Whiskey)
             .FirstOrDefaultAsync(b => b.Id == TargetInfinityBottleId && b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value));
 
-        if (source == null || target == null) 
-        {
-            return NotFound();
-        }
+        if (target == null) return NotFound();
+
+        var pourMl = (int)Math.Round(PourAmountOz * 29.5735);
 
         source.CurrentVolumeMl = 0;
         source.Status = BottleStatus.Empty;
 
-        target.CurrentVolumeMl += PourAmountMl;
+        target.CurrentVolumeMl += pourMl;
 
         var blendLog = new BlendComponent
         {
             SourceBottleId = source.Id,
             InfinityBottleId = target.Id,
-            AmountAddedMl = PourAmountMl,
+            AmountAddedMl = pourMl,
             DateAdded = DateOnly.FromDateTime(_timeProvider.GetLocalNow().DateTime)
         };
         _context.BlendComponents.Add(blendLog);
