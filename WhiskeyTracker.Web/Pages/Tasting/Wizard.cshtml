@@ -293,19 +293,6 @@
                 }
             });
 
-            // Handle selection from datalist
-            $('.tag-input').on('input', function() {
-                var val = $(this).val();
-                var field = $(this).data('field');
-                var options = $('#tag-suggestions option');
-                for (var i = 0; i < options.length; i++) {
-                    if (options[i].value === val) {
-                        addTag(field, val);
-                        $(this).val('');
-                        break;
-                    }
-                }
-            });
         });
 
         function addTag(field, name) {
