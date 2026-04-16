@@ -84,6 +84,10 @@ Follow these instructions to get the project running on your local machine.
 * ~~**Clean Build Warnings:** Fix all build warnings. ([#87](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/87))~~
 * ~~**Align Form Fields:** Adding a whiskey form matches editing a whiskey form. ([#71](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/71))~~
 
+## 🤖 AI Agents
+
+If you are an AI agent working on this repository, please read the `AGENTS.md` file in the root directory for guidelines and workflow rules.
+
 ## 🤝 Contributing
 
 1.  Fork the project.
