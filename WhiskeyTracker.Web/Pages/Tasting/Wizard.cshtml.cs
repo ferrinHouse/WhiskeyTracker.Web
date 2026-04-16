@@ -320,11 +320,12 @@ public class WizardModel : PageModel
         }), "Id", "Text");
 
         var whiskies = await _context.Whiskies
-            .OrderBy(w => w.Name)
-            .Select(w => new { w.Id, w.Name })
+            .OrderBy(w => w.Brand)
+            .ThenBy(w => w.Name)
+            .Select(w => new { w.Id, Text = $"{w.Brand} {w.Name}" })
             .ToListAsync();
 
-        WhiskeyOptions = new SelectList(whiskies, "Id", "Name");
+        WhiskeyOptions = new SelectList(whiskies, "Id", "Text");
 
         AvailableTags = await _context.Tags
             .Where(t => t.IsApproved || t.CreatedByUserId == userId)
