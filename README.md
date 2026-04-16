@@ -13,7 +13,7 @@
 
 ## 🛠 Tech Stack
 
-* **Framework:** ASP.NET Core 9.0 (Razor Pages)
+* **Framework:** ASP.NET Core 10.0 (Razor Pages)
 * **Language:** C#
 * **Database:** PostgreSQL
 * **ORM:** Entity Framework Core
@@ -25,7 +25,7 @@ Follow these instructions to get the project running on your local machine.
 
 ### Prerequisites
 
-1.  [.NET 9.0 SDK](https://dotnet.microsoft.com/download)
+1.  [.NET 10.0 SDK](https://dotnet.microsoft.com/download)
 2.  [PostgreSQL](https://www.postgresql.org/download/) (Local install or Docker container)
 3.  Visual Studio, VS Code, or JetBrains Rider.
 
