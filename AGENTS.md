@@ -17,8 +17,8 @@ When asked to "ship this," "create a PR," or "save my work," you must follow thi
 1. **Check Status:** Run `git status` to see what has changed and `git branch --show-current` to identify the current branch.
 2. **Main Branch Protection:** If the current branch is `main`, you **must** create a new branch. Direct commits to `main` are prohibited.
 3. **Branch Naming:**
-   - specific feature? -> `feature/<brief-description>`
-   - bug fix? -> `fix/<brief-description>`
+   - specific feature? -> feature/brief-description
+   - bug fix? -> fix/brief-description
    - vague? -> ask the user for a branch name.
 4. **Create Branch:** Run `git switch -c <branch_name>`. (If branch exists, use `git switch <branch_name>`).
 
