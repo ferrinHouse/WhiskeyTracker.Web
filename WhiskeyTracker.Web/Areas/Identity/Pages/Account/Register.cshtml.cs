@@ -164,7 +164,14 @@ namespace WhiskeyTracker.Web.Areas.Identity.Pages.Account
                     else
                     {
                         await _signInManager.SignInAsync(user, isPersistent: false);
-                        return LocalRedirect(returnUrl);
+                        if (Url.IsLocalUrl(returnUrl))
+                        {
+                            return LocalRedirect(returnUrl);
+                        }
+                        else
+                        {
+                            return LocalRedirect(Url.Content("~/"));
+                        }
                     }
                 }
                 foreach (var error in result.Errors)
