@@ -3,7 +3,7 @@
 This document contains instructions and context for AI agents working on the WhiskeyTracker codebase.
 
 ## Project Overview
-Personal whiskey inventory and tasting journal. ASP.NET Core 10.0 Razor Pages, PostgreSQL, EF Core, Bootstrap 5. Deployed on Kubernetes on a Raspberry Pi cluster (ARM64 Linux binaries on NFS, generic .NET runtime container).
+Personal whiskey inventory and tasting journal. ASP.NET Core 9.0 Razor Pages, PostgreSQL, EF Core, Bootstrap 5. Deployed on Kubernetes on a Raspberry Pi cluster (ARM64 Linux binaries on NFS, generic .NET runtime container).
 
 ## Key Files
 - `docs/product_requirements.md` — Full PRD with user stories and feature intent
@@ -17,8 +17,8 @@ When asked to "ship this," "create a PR," or "save my work," you must follow thi
 1. **Check Status:** Run `git status` to see what has changed and `git branch --show-current` to identify the current branch.
 2. **Main Branch Protection:** If the current branch is `main`, you **must** create a new branch. Direct commits to `main` are prohibited.
 3. **Branch Naming:**
-   - specific feature? -> feature/brief-description
-   - bug fix? -> fix/brief-description
+   - specific feature? -> `feature/<brief-description>`
+   - bug fix? -> `fix/<brief-description>`
    - vague? -> ask the user for a branch name.
 4. **Create Branch:** Run `git switch -c <branch_name>`. (If branch exists, use `git switch <branch_name>`).
 

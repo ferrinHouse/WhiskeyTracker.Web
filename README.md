@@ -13,7 +13,7 @@
 
 ## 🛠 Tech Stack
 
-* **Framework:** ASP.NET Core 10.0 (Razor Pages)
+* **Framework:** ASP.NET Core 9.0 (Razor Pages)
 * **Language:** C#
 * **Database:** PostgreSQL
 * **ORM:** Entity Framework Core
@@ -25,7 +25,7 @@ Follow these instructions to get the project running on your local machine.
 
 ### Prerequisites
 
-1.  [.NET 10.0 SDK](https://dotnet.microsoft.com/download)
+1.  [.NET 9.0 SDK](https://dotnet.microsoft.com/download)
 2.  [PostgreSQL](https://www.postgresql.org/download/) (Local install or Docker container)
 3.  Visual Studio, VS Code, or JetBrains Rider.
 
@@ -83,6 +83,10 @@ Follow these instructions to get the project running on your local machine.
 * **API:** Add an API to access the collection. ([#86](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/86))
 * ~~**Clean Build Warnings:** Fix all build warnings. ([#87](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/87))~~
 * ~~**Align Form Fields:** Adding a whiskey form matches editing a whiskey form. ([#71](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/71))~~
+
+## 🤖 AI Agents
+
+If you are an AI agent working on this repository, please read the `AGENTS.md` file in the root directory for guidelines and workflow rules.
 
 ## 🤝 Contributing
 

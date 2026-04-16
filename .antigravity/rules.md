@@ -1,1 +1,1 @@
-See `AGENTS.md` in the repository root.
+This file acts as a pointer. The main workflow rules for the Antigravity agent are now located in `AGENTS.md` in the repository root. Please refer to `AGENTS.md` as the single source of truth for Agent Role: Git Release Manager.
