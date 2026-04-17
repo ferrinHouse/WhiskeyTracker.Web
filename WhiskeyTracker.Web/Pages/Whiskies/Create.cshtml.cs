@@ -48,6 +48,15 @@ public class CreateModel : PageModel
 
         if (!string.IsNullOrEmpty(GooglePhotoUrl) && !string.IsNullOrEmpty(GooglePhotoToken))
         {
+            // SSRF Protection: Validate that the URL is a legitimate Google Photos URL.
+            if (!Uri.TryCreate(GooglePhotoUrl, UriKind.Absolute, out var uri) ||
+                uri.Scheme != Uri.UriSchemeHttps ||
+                !uri.Host.EndsWith(".googleusercontent.com"))
+            {
+                ModelState.AddModelError("GooglePhotoUrl", "Invalid Google Photos URL.");
+                return Page();
+            }
+
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GooglePhotoToken);
             var response = await httpClient.GetAsync(GooglePhotoUrl);
@@ -65,7 +74,8 @@ public class CreateModel : PageModel
         }
         else if (ImageUpload != null)
         {
-            var uniqueFileName = Guid.NewGuid().ToString() + "_" + ImageUpload.FileName;
+            var sanitizedFileName = Path.GetFileName(ImageUpload.FileName);
+            var uniqueFileName = Guid.NewGuid().ToString() + "_" + sanitizedFileName;
             var uploadsFolder = Path.Combine(_environment.WebRootPath, "images");
 
             if (!Directory.Exists(uploadsFolder))
