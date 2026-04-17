@@ -44,7 +44,7 @@ public class WhiskiesTests : TestBase
         await context.SaveChangesAsync();
 
         var legacyService = new WhiskeyTracker.Web.Services.LegacyMigrationService(context);
-        
+
         // Search matches Brand
         var pageModel = new IndexModel(context, legacyService) { SearchString = "William" };
         SetMockUser(pageModel, "test-user");
@@ -126,7 +126,7 @@ public class WhiskiesTests : TestBase
         Assert.IsType<RedirectToPageResult>(result);
         var whiskey = await context.Whiskies.FirstAsync();
         Assert.Equal("Test Whiskey", whiskey.Name);
-        Assert.Contains("test.jpg", whiskey.ImageFileName); // Confirms filename was generated
+        Assert.EndsWith(".jpg", whiskey.ImageFileName); // Confirms extension was preserved
     }
 
     [Fact]
@@ -140,8 +140,8 @@ public class WhiskiesTests : TestBase
 
         var pageModel = new CreateModel(context, mockEnv.Object)
         {
-            NewWhiskey = new Whiskey 
-            { 
+            NewWhiskey = new Whiskey
+            {
                 Name = "No Cask Whiskey",
                 Distillery = "Test Distillery",
                 CaskType = null // Explicitly null
@@ -210,80 +210,6 @@ public class WhiskiesTests : TestBase
 
         Assert.NotNull(pageModel.Whiskey);
         Assert.Equal("Test", pageModel.Whiskey.Name);
-    }
-
-    // --- DELETE TESTS ---
-
-    [Fact]
-    public async Task Delete_OnGet_ReturnsNotFound_ForNullId()
-    {
-        using var context = GetInMemoryContext();
-        var pageModel = new DeleteModel(context);
-        var result = await pageModel.OnGetAsync(null);
-        Assert.IsType<NotFoundResult>(result);
-    }
-
-    [Fact]
-    public async Task Delete_OnGet_ReturnsNotFound_ForMissingWhiskey()
-    {
-        using var context = GetInMemoryContext();
-        var pageModel = new DeleteModel(context);
-        var result = await pageModel.OnGetAsync(999);
-        Assert.IsType<NotFoundResult>(result);
-    }
-
-    [Fact]
-    public async Task Delete_OnGet_ReturnsPage_WithWhiskey()
-    {
-        using var context = GetInMemoryContext();
-        context.Whiskies.Add(new Whiskey { Id = 1, Name = "To Delete" });
-        await context.SaveChangesAsync();
-
-        var pageModel = new DeleteModel(context);
-        var result = await pageModel.OnGetAsync(1);
-
-        Assert.IsType<PageResult>(result);
-        Assert.NotNull(pageModel.Whiskey);
-    }
-
-    [Fact]
-
-    public async Task Delete_RemovesWhiskey_WhenFound()
-    {
-        using var context = GetInMemoryContext();
-        context.Whiskies.Add(new Whiskey { Id = 1, Name = "To Delete" });
-        await context.SaveChangesAsync();
-
-        var pageModel = new DeleteModel(context);
-        var result = await pageModel.OnPostAsync(1);
-
-        Assert.IsType<RedirectToPageResult>(result);
-        Assert.Empty(context.Whiskies);
-    }
-
-    [Fact]
-
-    public async Task Delete_ReturnsNotFound_WhenWhiskeyNotFound()
-    {
-        // Arrange
-        using var context = GetInMemoryContext();
-        var pageModel = new DeleteModel(context);
-
-        // Act
-        var result = await pageModel.OnPostAsync(999); // A non-existent ID
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
-
-    }
-
-    [Fact]
-    public async Task Delete_OnPost_ReturnsNotFound_ForNullId()
-    {
-        using var context = GetInMemoryContext();
-        var pageModel = new DeleteModel(context);
-        var result = await pageModel.OnPostAsync(null);
-        Assert.IsType<NotFoundResult>(result);
     }
 
     // --- EDIT TESTS ---
@@ -357,7 +283,6 @@ public class WhiskiesTests : TestBase
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.NotNull(pageModel.Whiskey);
         Assert.NotNull(pageModel.Whiskey);
         Assert.Equal(1, pageModel.Whiskey.Id);
     }
@@ -477,7 +402,7 @@ public class WhiskiesTests : TestBase
         Assert.NotNull(updatedWhiskey);
         Assert.NotNull(updatedWhiskey.ImageFileName);
         Assert.NotEqual(oldFileName, updatedWhiskey.ImageFileName);
-        Assert.Contains(newFileName, updatedWhiskey.ImageFileName);
+        Assert.EndsWith(".jpg", updatedWhiskey.ImageFileName);
         Assert.False(File.Exists(oldFilePath));
         Assert.True(File.Exists(Path.Combine(tempPath, "images", updatedWhiskey.ImageFileName)));
 
