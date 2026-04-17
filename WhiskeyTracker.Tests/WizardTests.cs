@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using WhiskeyTracker.Web.Data;
 using WhiskeyTracker.Web.Pages.Tasting;
 using Microsoft.EntityFrameworkCore;
@@ -262,5 +263,35 @@ public class WizardTests : TestBase
 
         var finishTags = note.TastingNoteTags.Where(t => t.Field == TastingField.Finish).Select(t => t.Tag.Name).ToList();
         Assert.Contains("long", finishTags);
+    }
+
+    [Fact]
+    public async Task OnGet_PopulatesWhiskeyOptionsWithBrandAndName()
+    {
+        // ARRANGE
+        using var context = GetInMemoryContext();
+        var userId = "test-user";
+        context.Whiskies.AddRange(
+            new Whiskey { Brand = "Macallan", Name = "12 Year", Distillery = "Macallan" },
+            new Whiskey { Brand = "Buffalo Trace", Name = "Bourbon", Distillery = "Buffalo Trace" }
+        );
+        await context.SaveChangesAsync();
+
+        var session = new TastingSession { Title = "Session", UserId = userId, Date = DateOnly.FromDateTime(DateTime.Now) };
+        context.TastingSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var hubMock = GetMockHubContext();
+        var service = new TastingSessionService(context, hubMock.Object);
+        var pageModel = new WizardModel(context, hubMock.Object, service);
+        SetMockUser(pageModel, userId);
+
+        // ACT
+        await pageModel.OnGetAsync(session.Id);
+
+        // ASSERT
+        var options = pageModel.WhiskeyOptions.Cast<SelectListItem>().ToList();
+        Assert.Contains(options, o => o.Text == "Buffalo Trace Bourbon");
+        Assert.Contains(options, o => o.Text == "Macallan 12 Year");
     }
 }
