@@ -284,7 +284,6 @@ public class WhiskiesTests : TestBase
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.NotNull(pageModel.Whiskey);
-        Assert.NotNull(pageModel.Whiskey);
         Assert.Equal(1, pageModel.Whiskey.Id);
     }
 
