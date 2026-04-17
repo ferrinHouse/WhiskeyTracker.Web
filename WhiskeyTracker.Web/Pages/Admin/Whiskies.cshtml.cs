@@ -35,10 +35,9 @@ public class WhiskiesModel : PageModel
 
         if (!string.IsNullOrEmpty(SearchString))
         {
-            var lowerSearch = SearchString.ToLower();
-            query = query.Where(w => w.Brand.ToLower().Contains(lowerSearch)
-                                || w.Name.ToLower().Contains(lowerSearch)
-                                || w.Distillery.ToLower().Contains(lowerSearch));
+            query = query.Where(w => w.Brand.Contains(SearchString)
+                                || w.Name.Contains(SearchString)
+                                || w.Distillery.Contains(SearchString));
         }
 
         var totalWhiskies = await query.CountAsync();
@@ -89,6 +88,7 @@ public class WhiskiesModel : PageModel
             return RedirectToPage();
         }
 
+        using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
             // Move Bottles
@@ -109,10 +109,12 @@ public class WhiskiesModel : PageModel
             _context.Whiskies.Remove(sourceWhiskey);
             await _context.SaveChangesAsync();
 
+            await transaction.CommitAsync();
             TempData["Message"] = $"Successfully merged '{sourceWhiskey.Brand} {sourceWhiskey.Name}' into '{targetWhiskey.Brand} {targetWhiskey.Name}'.";
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync();
             _logger.LogError(ex, "Error merging whiskey {SourceId} into {TargetId}", sourceId, targetId);
             TempData["ErrorMessage"] = "An error occurred during merging.";
         }
