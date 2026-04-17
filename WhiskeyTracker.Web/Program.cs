@@ -7,9 +7,7 @@ using Microsoft.Extensions.Logging;
 using WhiskeyTracker.Web.Data;
 using WhiskeyTracker.Web.Hubs;
 using WhiskeyTracker.Web.Services;
-
 var builder = WebApplication.CreateBuilder(args);
-
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole(); // Keep the console provider
 builder.Logging.AddJsonConsole(options =>
@@ -21,7 +19,6 @@ builder.Logging.AddJsonConsole(options =>
         Indented = false // Crucial: K8s logs are best as single-line JSON
     };
 });
-
 // FIX: Increase KeepAlive to prevent 502s from Nginx/Cloudflare
 builder.WebHost.ConfigureKestrel(options =>
 {
@@ -30,11 +27,9 @@ builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestLineSize = 32 * 1024; // Increase URL length limit
     options.Limits.MaxRequestHeaderCount = 200; // Allow more headers
 });
-
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>();
-
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizeFolder("/");
@@ -44,21 +39,16 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToPage("/Privacy");
     options.Conventions.AllowAnonymousToPage("/Terms");
 });
-
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
 });
-
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AppDbContext>();
-
 builder.Services.AddScoped<WhiskeyTracker.Web.Services.CollectionViewModelService>();
 builder.Services.AddScoped<WhiskeyTracker.Web.Services.LegacyMigrationService>();
-
 // Email Service
 builder.Services.AddTransient<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, WhiskeyTracker.Web.Services.EmailSender>();
-
 // Authentication
 builder.Services.AddAuthentication()
     .AddGoogle(options =>
@@ -66,13 +56,10 @@ builder.Services.AddAuthentication()
         options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? throw new InvalidOperationException("Authentication:Google:ClientId is not configured.");
         options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? throw new InvalidOperationException("Authentication:Google:ClientSecret is not configured.");
     });
-
 var dbSection = builder.Configuration.GetSection("Database");
 var provider = dbSection["Provider"]; 
 var connectionString = dbSection["ConnectionString"] ?? builder.Configuration.GetConnectionString("DefaultConnection");
-
 Console.WriteLine($"--> Database Provider: {provider}");
-
 switch (provider?.ToLower())
 {
     case "postgres":
@@ -92,14 +79,12 @@ switch (provider?.ToLower())
             options.UseInMemoryDatabase("WhiskeyTrackerInMemory"));
         break;
 }
-
 builder.Services.AddHealthChecks();
 builder.Services.AddSignalR();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders =
         ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-
     // SECURITY: Restrict trusted proxies to known private networks to prevent IP spoofing.
     // In Kubernetes, the Ingress Controller behaves as the proxy.
     // Since we don't know the exact Pod CIDR, we trust standard private ranges.
@@ -109,11 +94,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardLimit = null; // Disable limit to handle Nginx -> K8s Ingress -> Pod
 });
 builder.Services.AddSingleton(TimeProvider.System);
-
 builder.Services.AddScoped<TastingSessionService>();
-
 var app = builder.Build();
-
 // ---------------------------------------------------------
 // 2. DATA SEEDING (Config Driven)
 // ---------------------------------------------------------
@@ -122,26 +104,19 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
     // Migrate() applies any pending migrations and creates the DB if it doesn't exist
     if (context.Database.IsRelational())
     {
         context.Database.Migrate(); 
     }
-
     // Initialize roles and admin setup (always run)
     // Only seed broad data if the configuration explicitly says 'true'
     bool seedSampleData = dbSection.GetValue<bool>("SeedOnStartup");
-
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
-
     await DbInitializer.Initialize(context, userManager, roleManager, builder.Configuration, seedSampleData, logger, env);
 }
-
-
 app.UseForwardedHeaders();
-
 // Fix for Kubernetes Ingress stripping X-Forwarded-Proto
 app.Use(async (context, next) =>
 {
@@ -153,23 +128,18 @@ app.Use(async (context, next) =>
     }
     await next();
 });
-
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
-
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapHealthChecks("/health");
 app.MapControllers();
 app.MapRazorPages();
 app.MapHub<TastingHub>("/tastingHub");
-
 app.Run();

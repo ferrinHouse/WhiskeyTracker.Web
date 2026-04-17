@@ -5,7 +5,9 @@ using WhiskeyTracker.Web.Data;
 
 namespace WhiskeyTracker.Web.Pages.Whiskies;
 
-[Authorize(Roles = "Admin")]
+
+
+[Authorize]
 public class CreateModel : PageModel
 {
     private readonly AppDbContext _context;
