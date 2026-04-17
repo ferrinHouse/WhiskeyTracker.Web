@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
 namespace WhiskeyTracker.Web.Hubs;
 
+[Authorize]
 public class TastingHub : Hub
 {
     public async Task JoinSession(string sessionId)
