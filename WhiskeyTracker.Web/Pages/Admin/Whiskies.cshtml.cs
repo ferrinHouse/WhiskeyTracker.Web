@@ -52,16 +52,16 @@ public class WhiskiesModel : PageModel
 
     public async Task<IActionResult> OnPostDeleteWhiskeyAsync(int whiskeyId)
     {
-        var whiskey = await _context.Whiskies
-            .Include(w => w.Bottles)
-            .Include(w => w.TastingNotes)
-            .FirstOrDefaultAsync(w => w.Id == whiskeyId);
-
+        var whiskey = await _context.Whiskies.FindAsync(whiskeyId);
         if (whiskey == null) return NotFound();
 
-        if (whiskey.Bottles.Any() || whiskey.TastingNotes.Any())
+        var hasBottles = await _context.Bottles.AnyAsync(b => b.WhiskeyId == whiskeyId);
+        var hasNotes = await _context.TastingNotes.AnyAsync(n => n.WhiskeyId == whiskeyId);
+        var hasLineupItems = await _context.SessionLineupItems.AnyAsync(sli => sli.WhiskeyId == whiskeyId);
+
+        if (hasBottles || hasNotes || hasLineupItems)
         {
-            TempData["ErrorMessage"] = "Cannot delete whiskey that has bottles or tasting notes. Consider merging it instead.";
+            TempData["ErrorMessage"] = "Cannot delete whiskey that has bottles, tasting notes, or session lineup entries. Consider merging it instead.";
             return RedirectToPage();
         }
 
@@ -80,11 +80,7 @@ public class WhiskiesModel : PageModel
             return RedirectToPage();
         }
 
-        var sourceWhiskey = await _context.Whiskies
-            .Include(w => w.Bottles)
-            .Include(w => w.TastingNotes)
-            .FirstOrDefaultAsync(w => w.Id == sourceId);
-
+        var sourceWhiskey = await _context.Whiskies.FindAsync(sourceId);
         var targetWhiskey = await _context.Whiskies.FindAsync(targetId);
 
         if (sourceWhiskey == null || targetWhiskey == null)
@@ -96,25 +92,19 @@ public class WhiskiesModel : PageModel
         try
         {
             // Move Bottles
-            foreach (var bottle in sourceWhiskey.Bottles)
-            {
-                bottle.WhiskeyId = targetId;
-            }
+            await _context.Bottles
+                .Where(b => b.WhiskeyId == sourceId)
+                .ExecuteUpdateAsync(s => s.SetProperty(b => b.WhiskeyId, targetId));
 
             // Move Tasting Notes
-            foreach (var note in sourceWhiskey.TastingNotes)
-            {
-                note.WhiskeyId = targetId;
-            }
+            await _context.TastingNotes
+                .Where(n => n.WhiskeyId == sourceId)
+                .ExecuteUpdateAsync(s => s.SetProperty(n => n.WhiskeyId, targetId));
 
             // Move SessionLineupItems
-            var lineupItems = await _context.SessionLineupItems
+            await _context.SessionLineupItems
                 .Where(sli => sli.WhiskeyId == sourceId)
-                .ToListAsync();
-            foreach (var item in lineupItems)
-            {
-                item.WhiskeyId = targetId;
-            }
+                .ExecuteUpdateAsync(s => s.SetProperty(sli => sli.WhiskeyId, targetId));
 
             _context.Whiskies.Remove(sourceWhiskey);
             await _context.SaveChangesAsync();

@@ -19,6 +19,27 @@ public class TestBase
         return new AppDbContext(options);
     }
 
+    protected AppDbContext GetSqliteMemoryContext()
+    {
+        var connection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
+        connection.Open();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        var context = new AppDbContext(options);
+        context.Database.EnsureCreated();
+        return context;
+    }
+
+    protected AppDbContext GetInMemoryContextWithExecuteUpdateSupport()
+    {
+        // Actually, since InMemory doesn't support ExecuteUpdate, and we want to test the logic,
+        // we use a real SQLite DB for this specific test case.
+        return GetSqliteMemoryContext();
+    }
+
     protected UserManager<ApplicationUser> GetMockUserManager(AppDbContext? context = null)
     {
         var store = new Mock<IUserStore<ApplicationUser>>();

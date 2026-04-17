@@ -64,34 +64,10 @@
                                             data-source-id="@whiskey.Id" data-source-name="@whiskey.Brand @whiskey.Name">
                                         Merge
                                     </button>
-                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-@whiskey.Id">
+                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                            data-whiskey-id="@whiskey.Id" data-whiskey-name="@whiskey.Brand @whiskey.Name">
                                         Delete
                                     </button>
-                                </div>
-
-                                <!-- Delete Confirmation Modal -->
-                                <div class="modal fade" id="deleteModal-@whiskey.Id" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header text-start">
-                                                <h5 class="modal-title">Confirm Deletion</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body text-start">
-                                                Are you sure you want to delete <strong>@whiskey.Brand @whiskey.Name</strong>?
-                                                <br/><br/>
-                                                <div class="alert alert-warning mb-0">
-                                                    <i class="bi bi-exclamation-triangle"></i> You can only delete whiskies with no associated bottles or tasting notes.
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                <form method="post" asp-page-handler="DeleteWhiskey" asp-route-whiskeyId="@whiskey.Id">
-                                                    <button type="submit" class="btn btn-danger">Delete</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -149,19 +125,60 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-start">
+                Are you sure you want to delete <strong id="deleteWhiskeyName"></strong>?
+                <br/><br/>
+                <div class="alert alert-warning mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> You can only delete whiskies with no associated bottles, tasting notes, or session lineup entries.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" asp-page-handler="DeleteWhiskey" id="deleteForm">
+                    <input type="hidden" name="whiskeyId" id="deleteWhiskeyId" />
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        var mergeModal = document.getElementById('mergeModal');
-        mergeModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var sourceId = button.getAttribute('data-source-id');
-            var sourceName = button.getAttribute('data-source-name');
+        document.addEventListener('DOMContentLoaded', function () {
+            var mergeModal = document.getElementById('mergeModal');
+            mergeModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var sourceId = button.getAttribute('data-source-id');
+                var sourceName = button.getAttribute('data-source-name');
 
-            var modalIdInput = mergeModal.querySelector('#sourceWhiskeyId');
-            var modalNameSpan = mergeModal.querySelector('#sourceWhiskeyName');
+                var modalIdInput = mergeModal.querySelector('#sourceWhiskeyId');
+                var modalNameSpan = mergeModal.querySelector('#sourceWhiskeyName');
 
-            modalIdInput.value = sourceId;
-            modalNameSpan.textContent = sourceName;
+                modalIdInput.value = sourceId;
+                modalNameSpan.textContent = sourceName;
+            });
+
+            var deleteModal = document.getElementById('deleteModal');
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var whiskeyId = button.getAttribute('data-whiskey-id');
+                var whiskeyName = button.getAttribute('data-whiskey-name');
+
+                var modalIdInput = deleteModal.querySelector('#deleteWhiskeyId');
+                var modalNameSpan = deleteModal.querySelector('#deleteWhiskeyName');
+
+                modalIdInput.value = whiskeyId;
+                modalNameSpan.textContent = whiskeyName;
+            });
         });
     </script>
 }

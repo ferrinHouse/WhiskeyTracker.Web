@@ -18,7 +18,7 @@ public class AdminWhiskiesTests : TestBase
     public async Task MergeWhiskies_MovesRelatedData()
     {
         // Arrange
-        using var context = GetInMemoryContext();
+        using var context = GetInMemoryContextWithExecuteUpdateSupport();
         var logger = new Mock<ILogger<WhiskiesModel>>();
         var pageModel = new WhiskiesModel(context, logger.Object);
 
@@ -45,11 +45,17 @@ public class AdminWhiskiesTests : TestBase
         context.SessionLineupItems.Add(lineupItem);
         await context.SaveChangesAsync();
 
+        // Clear tracker to simulate a fresh request in the PageModel
+        context.ChangeTracker.Clear();
+
         // Act
         var result = await pageModel.OnPostMergeWhiskeyAsync(sourceWhiskey.Id, targetWhiskey.Id);
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
+
+        // Clear tracker again before assertions to ensure we fetch from DB
+        context.ChangeTracker.Clear();
 
         var movedBottle = await context.Bottles.FirstOrDefaultAsync(b => b.Id == bottle.Id);
         Assert.NotNull(movedBottle);
