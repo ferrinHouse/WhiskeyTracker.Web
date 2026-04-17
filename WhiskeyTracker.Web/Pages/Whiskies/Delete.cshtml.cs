@@ -49,6 +49,6 @@ public class DeleteModel : PageModel
             await _context.SaveChangesAsync();
         }
 
-        return RedirectToPage("./Index");
+        return RedirectToPage("/Admin/Whiskies");
     }
 }
