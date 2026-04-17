@@ -1,0 +1,30 @@
+[
+    {
+        "comment_id": "3101675413",
+        "reply": "I've reviewed the feedback from gemini-code-assist. The suggested improvements for efficiency and completeness have been implemented."
+    },
+    {
+        "comment_id": "3101723688",
+        "reply": "Refactored the deletion logic to use 'AnyAsync' for better performance and added the check for 'SessionLineupItems' to prevent foreign key violations. Thanks for the catch!"
+    },
+    {
+        "comment_id": "3101865299",
+        "reply": "Updated the merge logic to use a database transaction, ensuring that all bulk updates and the final deletion are atomic."
+    },
+    {
+        "comment_id": "3102115581",
+        "reply": "Removed '.ToLower()' from the search query to allow the database to use its own collation and indexes efficiently."
+    },
+    {
+        "comment_id": "3102715995",
+        "reply": "Confirmed. The dependency check now uses 'AnyAsync' and includes all relevant tables."
+    },
+    {
+        "comment_id": "4269736114",
+        "reply": "I have addressed all the feedback from gemini-code-assist in the latest update. The logic is now more robust and efficient."
+    },
+    {
+        "comment_id": "4269993600",
+        "reply": "I have reviewed the responses and applied all recommendations, including transactional safety for merges and optimized dependency checks for deletions."
+    }
+]
