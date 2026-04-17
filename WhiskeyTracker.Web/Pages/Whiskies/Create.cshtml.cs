@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using WhiskeyTracker.Web.Data;
 
 namespace WhiskeyTracker.Web.Pages.Whiskies;
 
+[Authorize(Roles = "Admin")]
 public class CreateModel : PageModel
 {
     private readonly AppDbContext _context;

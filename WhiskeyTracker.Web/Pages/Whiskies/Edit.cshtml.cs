@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -6,6 +7,7 @@ using WhiskeyTracker.Web.Data;
 
 namespace WhiskeyTracker.Web.Pages.Whiskies;
 
+[Authorize(Roles = "Admin")]
 public class EditModel : PageModel
 {
     private readonly AppDbContext _context;
