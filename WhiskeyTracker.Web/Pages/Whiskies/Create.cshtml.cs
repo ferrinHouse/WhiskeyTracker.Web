@@ -48,6 +48,14 @@ public class CreateModel : PageModel
 
         if (!string.IsNullOrEmpty(GooglePhotoUrl) && !string.IsNullOrEmpty(GooglePhotoToken))
         {
+            if (!Uri.TryCreate(GooglePhotoUrl, UriKind.Absolute, out var uriResult)
+                || uriResult.Scheme != Uri.UriSchemeHttps
+                || !uriResult.Host.EndsWith(".googleusercontent.com", StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError("GooglePhotoUrl", "Invalid Google Photo URL. Only secure googleusercontent.com URLs are allowed.");
+                return Page();
+            }
+
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GooglePhotoToken);
             var response = await httpClient.GetAsync(GooglePhotoUrl);
