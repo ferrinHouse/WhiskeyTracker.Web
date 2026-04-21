@@ -62,9 +62,18 @@ public class EditModel : PageModel
 
         if (!string.IsNullOrEmpty(GooglePhotoUrl) && !string.IsNullOrEmpty(GooglePhotoToken))
         {
+            // SECURITY: Validate URL to prevent SSRF
+            if (!Uri.TryCreate(GooglePhotoUrl, UriKind.Absolute, out var uriResult)
+                || uriResult.Scheme != Uri.UriSchemeHttps
+                || !uriResult.Host.EndsWith(".googleusercontent.com", StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError("GooglePhotoUrl", "Invalid Google Photo URL.");
+                return Page();
+            }
+
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GooglePhotoToken);
-            var response = await httpClient.GetAsync(GooglePhotoUrl);
+            var response = await httpClient.GetAsync(uriResult);
             if (response.IsSuccessStatusCode)
             {
                 var imageBytes = await response.Content.ReadAsByteArrayAsync();
@@ -86,7 +95,9 @@ public class EditModel : PageModel
         }
         else if (ImageUpload != null)
         {
-            var uniqueFileName = Guid.NewGuid().ToString() + "_" + ImageUpload.FileName;
+            // SECURITY: Prevent Path Traversal by generating unique name with only the extension
+            var extension = Path.GetExtension(ImageUpload.FileName);
+            var uniqueFileName = Guid.NewGuid().ToString() + extension;
             var uploadsFolder = Path.Combine(_environment.WebRootPath, "images");
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
