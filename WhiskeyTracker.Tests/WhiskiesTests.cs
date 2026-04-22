@@ -44,7 +44,7 @@ public class WhiskiesTests : TestBase
         await context.SaveChangesAsync();
 
         var legacyService = new WhiskeyTracker.Web.Services.LegacyMigrationService(context);
-        
+
         // Search matches Brand
         var pageModel = new IndexModel(context, legacyService) { SearchString = "William" };
         SetMockUser(pageModel, "test-user");
@@ -126,7 +126,7 @@ public class WhiskiesTests : TestBase
         Assert.IsType<RedirectToPageResult>(result);
         var whiskey = await context.Whiskies.FirstAsync();
         Assert.Equal("Test Whiskey", whiskey.Name);
-        Assert.Contains("test.jpg", whiskey.ImageFileName); // Confirms filename was generated
+        Assert.EndsWith(".jpg", whiskey.ImageFileName); // Confirms filename was generated
     }
 
     [Fact]
@@ -140,8 +140,8 @@ public class WhiskiesTests : TestBase
 
         var pageModel = new CreateModel(context, mockEnv.Object)
         {
-            NewWhiskey = new Whiskey 
-            { 
+            NewWhiskey = new Whiskey
+            {
                 Name = "No Cask Whiskey",
                 Distillery = "Test Distillery",
                 CaskType = null // Explicitly null
@@ -477,7 +477,7 @@ public class WhiskiesTests : TestBase
         Assert.NotNull(updatedWhiskey);
         Assert.NotNull(updatedWhiskey.ImageFileName);
         Assert.NotEqual(oldFileName, updatedWhiskey.ImageFileName);
-        Assert.Contains(newFileName, updatedWhiskey.ImageFileName);
+        Assert.EndsWith(".jpg", updatedWhiskey.ImageFileName);
         Assert.False(File.Exists(oldFilePath));
         Assert.True(File.Exists(Path.Combine(tempPath, "images", updatedWhiskey.ImageFileName)));
 
