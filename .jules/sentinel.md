@@ -2,3 +2,8 @@
 **Vulnerability:** Any authenticated user could create, edit, or delete entries in the master `Whiskey` global directory because `Create.cshtml.cs`, `Edit.cshtml.cs`, and `Delete.cshtml.cs` under `Pages/Whiskies` lacked authorization attributes. Only the `/Admin` folder was protected by convention.
 **Learning:** Razor Pages convention-based folder authorization (`AuthorizeFolder("/Admin")`) does not automatically protect administrative-level entities that reside outside the designated admin folder.
 **Prevention:** Always explicitly annotate page models with `[Authorize(Roles = "Admin")]` for global entity modification pages, regardless of folder structure.
+
+## 2024-04-23 - SSRF Vulnerability in User-Provided Image URLs
+**Vulnerability:** The application was vulnerable to Server-Side Request Forgery (SSRF). The `GooglePhotoUrl` parameter from the client in `Create.cshtml.cs` and `Edit.cshtml.cs` was passed directly to `HttpClient.GetAsync()` without any validation. An attacker could potentially use this to make the server send HTTP requests to arbitrary internal or external addresses.
+**Learning:** Never pass unvalidated user input directly into network request clients like `HttpClient`. Even if the UI attempts to constrain the input (e.g., Google Photos integration), an attacker can easily bypass client-side restrictions and submit malicious URLs directly to the backend endpoint.
+**Prevention:** Always strictly validate user-provided URLs. Ensure the scheme is `https://`, verify the URL is absolute, and enforce a strict allowlist of trusted hostnames (e.g., `*.googleusercontent.com`) before initiating any server-side HTTP requests. If validation fails, return a generic error message to avoid leaking internal information.
