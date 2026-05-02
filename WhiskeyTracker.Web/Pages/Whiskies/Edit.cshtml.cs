@@ -9,7 +9,7 @@ namespace WhiskeyTracker.Web.Pages.Whiskies;
 
 
 
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class EditModel : PageModel
 {
     private readonly AppDbContext _context;
@@ -62,6 +62,14 @@ public class EditModel : PageModel
 
         if (!string.IsNullOrEmpty(GooglePhotoUrl) && !string.IsNullOrEmpty(GooglePhotoToken))
         {
+            if (!Uri.TryCreate(GooglePhotoUrl, UriKind.Absolute, out var uri) ||
+                uri.Scheme != Uri.UriSchemeHttps ||
+                !(uri.Host.EndsWith(".googleusercontent.com") || uri.Host.EndsWith(".googleapis.com")))
+            {
+                ModelState.AddModelError("GooglePhotoUrl", "Invalid Google Photo URL. Only googleusercontent.com or googleapis.com domains are permitted.");
+                return Page();
+            }
+
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GooglePhotoToken);
             var response = await httpClient.GetAsync(GooglePhotoUrl);
