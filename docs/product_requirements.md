@@ -279,6 +279,14 @@
 * **Identity & Security:**
   * Social Login integration (Google, Microsoft, etc.).
   * Enable HTTPS for production environment (Critical for OAuth and security).
+* **Global Ratings:** Aggregate per-user tasting ratings into a community/global average per whiskey, rather than only showing individual ratings.
+* **Ideas from Competitive Research (Sep 2026):** Not scoped or committed — captured for reference after surveying Distiller, Whiskybase, Whiskey Social, BAXUS, OnlyDrams, WhiskeySearcher/BoozApp, and wine-tracker equivalents (CellarTracker, Vivino). See memory `competitor_feature_research` for full source notes.
+  * **Barcode/label scanning** to add a bottle to the collection (near-universal across competitors). ([#254](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/254))
+  * **Market value / price-history tracking** per whiskey or bottle, beyond the single purchase price already recorded. ([#255](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/255))
+  * **Wishlist** — a "want to try/buy" list distinct from owned bottles. ([#256](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/256))
+  * **Collection randomizer** ("pick my pour") — suggest a bottle/whiskey to drink next from the current collection. ([#257](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/257))
+  * **Rarity/breakdown ranking** of a collection (e.g. common → rare → impossible) — would require an external rarity/production-volume data source. ([#258](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/258))
+  * Deliberately excluded for now: public social feed, following, venue check-ins, and blockchain/marketplace features (BAXUS-style) — these imply growing into a multi-tenant consumer product rather than a personal/small-group hobby app.
 
 **IX. Open Issues (Optional)**
 

@@ -84,6 +84,17 @@ Follow these instructions to get the project running on your local machine.
 * ~~**Clean Build Warnings:** Fix all build warnings. ([#87](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/87))~~
 * ~~**Align Form Fields:** Adding a whiskey form matches editing a whiskey form. ([#71](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/71))~~
 
+### Ideas from Competitive Research (not yet scoped)
+
+Captured Sep 2026 after surveying similar products (Distiller, Whiskybase, Whiskey Social, BAXUS, OnlyDrams, WhiskeySearcher/BoozApp, and wine trackers CellarTracker/Vivino). None of these are committed — just documented so they aren't lost.
+
+* **Barcode/Label Scanning:** Scan a bottle to add it to the collection instead of manual entry. ([#254](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/254))
+* **Market Value / Price History:** Track a whiskey or bottle's value over time, beyond the one-time purchase price already recorded. ([#255](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/255))
+* **Wishlist:** A "want to try/buy" list separate from owned bottles. ([#256](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/256))
+* **Collection Randomizer:** "Pick my pour" — suggest a bottle to drink next from the current collection. ([#257](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/257))
+* **Rarity/Breakdown Ranking:** Rank collection bottles by rarity (common → impossible); would need an external rarity/production-volume data source. ([#258](https://github.com/ferrinHouse/WhiskeyTracker.Web/issues/258))
+* **Deliberately not pursuing (for now):** public social feed, following other users, venue/bar check-ins, or blockchain/marketplace features — these push toward a multi-tenant consumer product rather than a personal/small-group hobby app.
+
 ## 🤖 AI Agents
 
 If you are an AI agent working on this repository, please read the `AGENTS.md` file in the root directory for guidelines and workflow rules.
