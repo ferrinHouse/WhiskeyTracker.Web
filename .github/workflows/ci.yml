@@ -92,7 +92,7 @@ jobs:
         spec:
           containers:
           - name: loader
-            image: alpine  # Lightweight, has tar
+            image: debian:stable-slim  # GNU tar avoids a kubectl cp hang seen with BusyBox/Alpine tar
             command: ["sleep", "3600"]
             volumeMounts:
             - mountPath: /app
