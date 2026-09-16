@@ -142,17 +142,21 @@ jobs:
       continue-on-error: true
 
     - name: Copy Files to NFS
-      timeout-minutes: 3
+      timeout-minutes: 6
       run: |
         # Clear existing files EXCEPT the backups directory
-        timeout 30 kubectl exec content-loader -- find /app -mindepth 1 -maxdepth 1 ! -name 'backups' -exec rm -rf {} +
+        timeout 60 kubectl exec content-loader -- find /app -mindepth 1 -maxdepth 1 ! -name 'backups' -exec rm -rf {} +
 
         # Copy new files (raw tar-over-exec instead of kubectl cp, which hangs on
-        # this cluster after a successful transfer - see PR history for #262/#263)
-        timeout 60 sh -c "tar cf - -C ./publish . | kubectl exec -i content-loader -- tar xf - -C /app"
+        # this cluster after a successful transfer - see PR history for #262/#263).
+        # The runner ("kubePrime") runs on the same Pi as the k3s control plane,
+        # so this can be genuinely slow under contention rather than truly stuck -
+        # a manual run against an idle cluster completed in ~22s, so 3 minutes
+        # gives real headroom without masking an actual hang for too long.
+        timeout 180 sh -c "tar cf - -C ./publish . | kubectl exec -i content-loader -- tar xf - -C /app"
 
         # Verify (best-effort; the copy above is what actually matters)
-        timeout 30 kubectl exec content-loader -- ls -la /app || echo "Verification listing timed out, but files were copied above."
+        timeout 60 kubectl exec content-loader -- ls -la /app || echo "Verification listing timed out, but files were copied above."
 
     - name: Cleanup Loader
       if: always()
