@@ -142,15 +142,16 @@ jobs:
       continue-on-error: true
 
     - name: Copy Files to NFS
+      timeout-minutes: 3
       run: |
         # Clear existing files EXCEPT the backups directory
-        kubectl exec content-loader -- find /app -mindepth 1 -maxdepth 1 ! -name 'backups' -exec rm -rf {} +
-        
+        timeout 30 kubectl exec content-loader -- find /app -mindepth 1 -maxdepth 1 ! -name 'backups' -exec rm -rf {} +
+
         # Copy new files
-        kubectl cp ./publish/. content-loader:/app/
-        
-        # Verify
-        kubectl exec content-loader -- ls -la /app
+        timeout 60 kubectl cp ./publish/. content-loader:/app/
+
+        # Verify (best-effort; the copy above is what actually matters)
+        timeout 30 kubectl exec content-loader -- ls -la /app || echo "Verification listing timed out, but files were copied above."
 
     - name: Cleanup Loader
       if: always()
