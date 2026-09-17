@@ -11,6 +11,8 @@ secretGenerator:
   - name: whiskey-secrets
     envs:
       - .env
+    options:
+      disableNameSuffixHash: true
 
 patches:
   - path: patches/nfs-server.yaml
