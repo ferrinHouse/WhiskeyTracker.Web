@@ -128,6 +128,22 @@ app.Use(async (context, next) =>
     }
     await next();
 });
+// Redirect legacy domains to the canonical evolvingpour.com domain
+var legacyHosts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+{
+    "whiskeytracker.ferrinhouse.org",
+    "whiskey-trek.com",
+};
+app.Use(async (context, next) =>
+{
+    if (legacyHosts.Contains(context.Request.Host.Host))
+    {
+        var target = $"https://evolvingpour.com{context.Request.Path}{context.Request.QueryString}";
+        context.Response.Redirect(target, permanent: true);
+        return;
+    }
+    await next();
+});
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
