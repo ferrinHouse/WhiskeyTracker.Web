@@ -66,7 +66,15 @@ switch (provider?.ToLower())
     case "postgresql":
         builder.Services.AddDbContext<AppDbContext>(options =>
         {
-            options.UseNpgsql(connectionString);
+            options.UseNpgsql(connectionString, npgsqlOptions =>
+            {
+                // Retries transient connection failures (e.g. the DB pod restarting) instead of
+                // crashing outright - this includes the Database.Migrate() call below.
+                npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorCodesToAdd: null);
+            });
             // Suppress the PendingModelChangesWarning to allow startup even if there is a minor snapshot drift
             // between the Windows-generated migration and the Linux runtime.
             options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
