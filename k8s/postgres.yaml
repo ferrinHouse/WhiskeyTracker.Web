@@ -4,6 +4,13 @@ metadata:
   name: postgres
 spec:
   replicas: 1
+  strategy:
+    # Default RollingUpdate briefly starts a second pod before the old one
+    # terminates. With a single replica on a ReadWriteOnce PVC, that causes
+    # the new pod to contend for the data directory lock with the old one
+    # still mounted, crashing on startup until it self-recovers on retry.
+    # Recreate avoids the overlap entirely for this single-replica workload.
+    type: Recreate
   selector:
     matchLabels:
       app: postgres
