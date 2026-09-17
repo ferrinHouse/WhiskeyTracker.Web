@@ -12,3 +12,8 @@
 **Vulnerability:** The application appended the unvalidated, user-provided `ImageUpload.FileName` directly to a generated GUID when saving uploaded files in `Create.cshtml.cs` and `Edit.cshtml.cs`. This allowed directory traversal payloads (e.g., `../../../`) to escape the intended `images` directory and save files in arbitrary locations.
 **Learning:** Never trust the `FileName` property of a user-uploaded file directly for filesystem paths, even if prefixed with a unique identifier, because path navigation segments are still evaluated.
 **Prevention:** Use `Path.GetExtension()` to extract only the extension from the original file name, and combine it with a server-generated unique identifier (like a GUID) to construct the final filename.
+
+## 2026-09-17 - SSRF in Image Upload via HttpClient Auto-Redirect
+**Vulnerability:** The host-allowlist check on `GooglePhotoUrl` only validated the initial request URL. `HttpClient` follows HTTP redirects by default, so a redirect response from an allowed host (e.g. an open redirect on `googleusercontent.com`) could send the server's request to an unvalidated internal or external destination, bypassing the check entirely.
+**Learning:** Validating the initial URL is not sufficient when the HTTP client automatically follows redirects - the redirect target is never re-validated against the allowlist.
+**Prevention:** Disable automatic redirects (`new HttpClientHandler { AllowAutoRedirect = false }`) when fetching from a user-supplied, allowlist-validated URL, so any redirect response fails closed instead of being silently followed.
