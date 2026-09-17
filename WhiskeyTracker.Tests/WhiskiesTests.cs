@@ -126,7 +126,7 @@ public class WhiskiesTests : TestBase
         Assert.IsType<RedirectToPageResult>(result);
         var whiskey = await context.Whiskies.FirstAsync();
         Assert.Equal("Test Whiskey", whiskey.Name);
-        Assert.Contains("test.jpg", whiskey.ImageFileName); // Confirms filename was generated
+        Assert.True(whiskey.ImageFileName.EndsWith(".jpg")); // Confirms filename was generated
     }
 
     [Fact]
@@ -477,7 +477,7 @@ public class WhiskiesTests : TestBase
         Assert.NotNull(updatedWhiskey);
         Assert.NotNull(updatedWhiskey.ImageFileName);
         Assert.NotEqual(oldFileName, updatedWhiskey.ImageFileName);
-        Assert.Contains(newFileName, updatedWhiskey.ImageFileName);
+        Assert.True(updatedWhiskey.ImageFileName.EndsWith(".jpg"));
         Assert.False(File.Exists(oldFilePath));
         Assert.True(File.Exists(Path.Combine(tempPath, "images", updatedWhiskey.ImageFileName)));
 
