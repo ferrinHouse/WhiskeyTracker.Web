@@ -15,6 +15,13 @@ spec:
       containers:
         - name: postgres
           image: postgres:15-alpine
+          # log_destination is postmaster-context: it can only be set at server
+          # startup, not via PGOPTIONS (which is a per-connection parameter).
+          # Use `args`, not `command` - overriding `command` replaces the
+          # image's entrypoint (docker-entrypoint.sh), which is what drops
+          # privileges to the postgres user; without it the server tries to
+          # run as root and refuses to start.
+          args: ["postgres", "-c", "log_destination=jsonlog"]
           ports:
             - containerPort: 5432
           livenessProbe:
@@ -48,7 +55,7 @@ spec:
           - name: POSTGRES_INITDB_ARGS
             value: "--auth-host=scram-sha-256"
           - name: PGOPTIONS
-            value: "-c log_statement=ddl -c log_destination=jsonlog"
+            value: "-c log_statement=ddl"
           - name: POSTGRES_DB
             value: whiskey_prod
           - name: POSTGRES_USER
