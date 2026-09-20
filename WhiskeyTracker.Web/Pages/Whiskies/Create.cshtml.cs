@@ -35,7 +35,7 @@ public class CreateModel : PageModel
 
     public void OnGet()
     {
-        // This runs when you first visit the page
+        NewWhiskey = new Whiskey { InStock = true };
     }
 
     public async Task<IActionResult> OnPostAsync()

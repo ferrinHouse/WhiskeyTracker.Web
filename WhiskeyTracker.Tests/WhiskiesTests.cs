@@ -169,6 +169,18 @@ public class WhiskiesTests : TestBase
     }
 
     [Fact]
+    public void Create_OnGet_DefaultsInStockToTrue()
+    {
+        using var context = GetInMemoryContext();
+        var mockEnv = new Mock<IWebHostEnvironment>();
+        var pageModel = new CreateModel(context, mockEnv.Object);
+
+        pageModel.OnGet();
+
+        Assert.True(pageModel.NewWhiskey.InStock);
+    }
+
+    [Fact]
     public async Task Create_OnPost_ReturnsPage_WhenModelStateInvalid()
     {
         using var context = GetInMemoryContext();
@@ -324,6 +336,28 @@ public class WhiskiesTests : TestBase
         var whiskey = await context.Whiskies.FindAsync(1);
         Assert.NotNull(whiskey);
         Assert.Equal("Original", whiskey.Name);
+    }
+
+    [Fact]
+    public async Task Edit_OnPost_PersistsInStockToggle()
+    {
+        using var context = GetInMemoryContext();
+        context.Whiskies.Add(new Whiskey { Id = 1, Name = "Original", InStock = true });
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var mockEnv = new Mock<IWebHostEnvironment>();
+        var pageModel = new EditModel(context, mockEnv.Object)
+        {
+            Whiskey = new Whiskey { Id = 1, Name = "Original", InStock = false }
+        };
+
+        var result = await pageModel.OnPostAsync();
+
+        Assert.IsType<RedirectToPageResult>(result);
+        var whiskey = await context.Whiskies.FindAsync(1);
+        Assert.NotNull(whiskey);
+        Assert.False(whiskey.InStock);
     }
 
     [Fact]

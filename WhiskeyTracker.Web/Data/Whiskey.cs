@@ -42,6 +42,9 @@ public class Whiskey
     [MaxLength(2000)]
     public string? GeneralNotes { get; set; }
 
+    [Display(Name = "In Stock")]
+    public bool InStock { get; set; } = true;
+
     [ValidateNever]
     public List<Bottle> Bottles { get; set; } = new();
     

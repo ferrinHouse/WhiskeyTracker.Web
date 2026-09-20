@@ -294,4 +294,30 @@ public class WizardTests : TestBase
         Assert.Contains(options, o => o.Text == "Buffalo Trace Bourbon");
         Assert.Contains(options, o => o.Text == "Macallan 12 Year");
     }
+
+    [Fact]
+    public async Task OnGet_WithWhiskeyId_PreselectsWhiskey()
+    {
+        // ARRANGE
+        using var context = GetInMemoryContext();
+        var userId = "test-user";
+        var whiskey = new Whiskey { Brand = "Macallan", Name = "12 Year", Distillery = "Macallan" };
+        context.Whiskies.Add(whiskey);
+        await context.SaveChangesAsync();
+
+        var session = new TastingSession { Title = "Session", UserId = userId, Date = DateOnly.FromDateTime(DateTime.Now) };
+        context.TastingSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var hubMock = GetMockHubContext();
+        var service = new TastingSessionService(context, hubMock.Object);
+        var pageModel = new WizardModel(context, hubMock.Object, service);
+        SetMockUser(pageModel, userId);
+
+        // ACT
+        await pageModel.OnGetAsync(session.Id, whiskey.Id);
+
+        // ASSERT
+        Assert.Equal(whiskey.Id, pageModel.SelectedWhiskeyId);
+    }
 }
