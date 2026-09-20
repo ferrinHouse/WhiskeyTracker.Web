@@ -110,6 +110,7 @@ else
                     @if (Model.SortOrder == "Region") { <i class="bi bi-caret-up-fill small ms-1"></i> }
                     else if (Model.SortOrder == "region_desc") { <i class="bi bi-caret-down-fill small ms-1"></i> }
                 </th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -134,12 +135,33 @@ else
                     <td>@item.Type</td>
                     <td>@item.Region</td>
                     <td>
+                        @if (item.InStock)
+                        {
+                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">In Stock</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">Out of Stock</span>
+                        }
+                    </td>
+                    <td>
                         <a asp-page="./Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Edit</a>
                         <a asp-page="./AddBottle" asp-route-id="@item.Id" class="btn btn-sm btn-outline-success">+ Bottle</a>
-                        <form method="post" asp-page="/Tasting/Create" class="d-inline">
-                            <input type="hidden" name="whiskeyId" value="@item.Id" />
-                            <button type="submit" class="btn btn-sm btn-outline-primary" style="position: relative; z-index: 2;">Taste</button>
-                        </form>
+                        @if (item.InStock)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-primary" style="position: relative; z-index: 2;"
+                                    data-bs-toggle="modal" data-bs-target="#tasteModal"
+                                    data-whiskey-id="@item.Id" data-whiskey-name="@item.Brand @item.Name">
+                                Taste
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary" style="position: relative; z-index: 2;" disabled
+                                    title="Mark this whiskey In Stock to log a taste">
+                                Taste
+                            </button>
+                        }
                         <a asp-page="./Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
                     </td>
                 </tr>
@@ -157,6 +179,32 @@ else
             </div>
             <div class="modal-body text-center pt-0">
                 <img id="previewImage" src="" alt="Whiskey Preview" class="img-fluid rounded shadow-sm" style="max-height: 80vh;" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Taste Chooser Modal -->
+<div class="modal fade" id="tasteModal" tabindex="-1" aria-labelledby="tasteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tasteModalLabel">Log a Taste<span id="tasteModalWhiskeyName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">How would you like to log this tasting?</p>
+                <div class="d-grid gap-2">
+                    <form method="post" asp-page="/Tasting/Create" asp-page-handler="Single">
+                        <input type="hidden" name="whiskeyId" id="tasteModalWhiskeyIdSingle" />
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-lightning-charge"></i> Quick Single Tasting
+                        </button>
+                    </form>
+                    <a id="tasteModalNewSessionLink" href="#" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-people"></i> Start a New Session
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -201,6 +249,18 @@ else
                 var modalImg = imageModal.querySelector('#previewImage');
                 modalImg.src = imageUrl;
                 modalImg.alt = altText;
+            });
+
+            var tasteModal = document.getElementById('tasteModal');
+            tasteModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var whiskeyId = button.getAttribute('data-whiskey-id');
+                var whiskeyName = button.getAttribute('data-whiskey-name');
+
+                document.getElementById('tasteModalWhiskeyIdSingle').value = whiskeyId;
+                document.getElementById('tasteModalWhiskeyName').textContent = whiskeyName ? (': ' + whiskeyName) : '';
+                document.getElementById('tasteModalNewSessionLink').href =
+                    '@Url.Page("/Tasting/Create")' + '?whiskeyId=' + encodeURIComponent(whiskeyId);
             });
 
             @if (TempData["PromptAddBottle"] != null)

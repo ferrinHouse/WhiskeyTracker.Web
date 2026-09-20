@@ -82,4 +82,61 @@ public class TastingTests
         Assert.NotNull(redirect.RouteValues);
         Assert.Equal(savedSession.Id, redirect.RouteValues["sessionId"]);
     }
+
+    [Fact]
+    public async Task Create_SavesAndRedirectsToWizard_CarriesWhiskeyIdThrough()
+    {
+        using var context = GetInMemoryContext();
+
+        var pageModel = new CreateModel(context, new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)))
+        {
+            Session = new TastingSession { Title = "Epic Night" },
+            WhiskeyId = 42
+        };
+
+        SetMockUser(pageModel, "test-user-id");
+
+        var result = await pageModel.OnPostAsync();
+
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.NotNull(redirect.RouteValues);
+        Assert.Equal(42, redirect.RouteValues["whiskeyId"]);
+    }
+
+    [Fact]
+    public async Task OnPostSingle_CreatesLightweightSessionAndRedirectsWithWhiskeyId()
+    {
+        using var context = GetInMemoryContext();
+
+        var whiskey = new Whiskey { Name = "Quick Pour", Distillery = "Test Distillery" };
+        context.Whiskies.Add(whiskey);
+        await context.SaveChangesAsync();
+
+        var pageModel = new CreateModel(context, new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)));
+        SetMockUser(pageModel, "test-user-id");
+
+        var result = await pageModel.OnPostSingleAsync(whiskey.Id);
+
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./Wizard", redirect.PageName);
+        Assert.NotNull(redirect.RouteValues);
+        Assert.Equal(whiskey.Id, redirect.RouteValues["whiskeyId"]);
+
+        var savedSession = await context.TastingSessions.FirstAsync();
+        Assert.Equal("test-user-id", savedSession.UserId);
+        Assert.Equal(savedSession.Id, redirect.RouteValues["sessionId"]);
+    }
+
+    [Fact]
+    public async Task OnPostSingle_UnknownWhiskey_ReturnsNotFound()
+    {
+        using var context = GetInMemoryContext();
+
+        var pageModel = new CreateModel(context, new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)));
+        SetMockUser(pageModel, "test-user-id");
+
+        var result = await pageModel.OnPostSingleAsync(999);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
 }

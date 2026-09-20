@@ -9,6 +9,7 @@
             <p class="text-muted">Gather your bottles and glasses.</p>
 
             <form method="post">
+                <input type="hidden" asp-for="WhiskeyId" />
                 <div class"form-floating mb-3">
                     <input asp-for="Session.Title" class="form-control" placeholder="Title" />
                     <label asp-for="Session.Title">Session Title</label>

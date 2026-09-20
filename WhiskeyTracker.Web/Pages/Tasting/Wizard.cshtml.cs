@@ -56,7 +56,7 @@ public class WizardModel : PageModel
     public List<Tag> AvailableTags { get; set; } = new();
 
     // GET: Prepares the page for viewing
-    public async Task<IActionResult> OnGetAsync(int sessionId)
+    public async Task<IActionResult> OnGetAsync(int sessionId, int? whiskeyId = null)
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId)) return RedirectToPage("/Account/Login");
@@ -77,6 +77,12 @@ public class WizardModel : PageModel
             // If not a participant, check if they are trying to join (implicitly or explicitly)
             // For now, we restrict to existing participants or owner.
             return NotFound();
+        }
+
+        // Preselect the whiskey the user chose "Taste" for back on the library page.
+        if (whiskeyId.HasValue)
+        {
+            SelectedWhiskeyId = whiskeyId;
         }
 
         return Page();
