@@ -3,7 +3,7 @@
 This document contains instructions and context for AI agents working on the WhiskeyTracker codebase.
 
 ## Project Overview
-Personal whiskey inventory and tasting journal. ASP.NET Core 9.0 Razor Pages, PostgreSQL, EF Core, Bootstrap 5. Deployed on Kubernetes on a Raspberry Pi cluster (ARM64 Linux binaries on NFS, generic .NET runtime container).
+Personal whiskey inventory and tasting journal. ASP.NET Core 10.0 Razor Pages, PostgreSQL, EF Core, Bootstrap 5. Deployed on Kubernetes (a Raspberry Pi cluster plus an amd64 node) from a multi-arch container image published to GHCR by CI; see `docs/DEPLOYMENT.md`.
 
 ## Key Files
 - `docs/product_requirements.md` — Full PRD with user stories and feature intent
