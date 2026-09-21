@@ -48,7 +48,7 @@ public class IndexModel : PageModel
             .Include(n => n.Whiskey)
             .Include(n => n.TastingNoteTags)
                 .ThenInclude(tnt => tnt.Tag)
-            .Where(n => n.UserId == userId || (n.BottleId.HasValue && n.Bottle.CollectionId.HasValue && myCollectionIds.Contains(n.Bottle.CollectionId.Value)))
+            .Where(n => n.UserId == userId || (n.Bottle != null && n.Bottle.CollectionId.HasValue && myCollectionIds.Contains(n.Bottle.CollectionId.Value)))
             .OrderByDescending(n => n.Id)
             .Take(5)
             .ToListAsync();

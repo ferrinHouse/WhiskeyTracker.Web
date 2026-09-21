@@ -126,7 +126,7 @@ public class WhiskiesTests : TestBase
         Assert.IsType<RedirectToPageResult>(result);
         var whiskey = await context.Whiskies.FirstAsync();
         Assert.Equal("Test Whiskey", whiskey.Name);
-        Assert.True(whiskey.ImageFileName.EndsWith(".jpg")); // Confirms filename was generated
+        Assert.EndsWith(".jpg", whiskey.ImageFileName); // Confirms filename was generated
     }
 
     [Fact]
@@ -166,18 +166,6 @@ public class WhiskiesTests : TestBase
         pageModel.OnGet(); // OnGet for CreateModel returns void
 
         // No direct assertion on result type needed as OnGet returns void
-    }
-
-    [Fact]
-    public void Create_OnGet_DefaultsInStockToTrue()
-    {
-        using var context = GetInMemoryContext();
-        var mockEnv = new Mock<IWebHostEnvironment>();
-        var pageModel = new CreateModel(context, mockEnv.Object);
-
-        pageModel.OnGet();
-
-        Assert.True(pageModel.NewWhiskey.InStock);
     }
 
     [Fact]
@@ -339,28 +327,6 @@ public class WhiskiesTests : TestBase
     }
 
     [Fact]
-    public async Task Edit_OnPost_PersistsInStockToggle()
-    {
-        using var context = GetInMemoryContext();
-        context.Whiskies.Add(new Whiskey { Id = 1, Name = "Original", InStock = true });
-        await context.SaveChangesAsync();
-        context.ChangeTracker.Clear();
-
-        var mockEnv = new Mock<IWebHostEnvironment>();
-        var pageModel = new EditModel(context, mockEnv.Object)
-        {
-            Whiskey = new Whiskey { Id = 1, Name = "Original", InStock = false }
-        };
-
-        var result = await pageModel.OnPostAsync();
-
-        Assert.IsType<RedirectToPageResult>(result);
-        var whiskey = await context.Whiskies.FindAsync(1);
-        Assert.NotNull(whiskey);
-        Assert.False(whiskey.InStock);
-    }
-
-    [Fact]
     public async Task Edit_OnGet_ReturnsNotFound_ForMissingWhiskey()
     {
         // Arrange
@@ -511,7 +477,7 @@ public class WhiskiesTests : TestBase
         Assert.NotNull(updatedWhiskey);
         Assert.NotNull(updatedWhiskey.ImageFileName);
         Assert.NotEqual(oldFileName, updatedWhiskey.ImageFileName);
-        Assert.True(updatedWhiskey.ImageFileName.EndsWith(".jpg"));
+        Assert.EndsWith(".jpg", updatedWhiskey.ImageFileName);
         Assert.False(File.Exists(oldFilePath));
         Assert.True(File.Exists(Path.Combine(tempPath, "images", updatedWhiskey.ImageFileName)));
 

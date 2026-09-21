@@ -614,9 +614,6 @@ namespace WhiskeyTracker.Web.Migrations
                     b.Property<string>("ImageFileName")
                         .HasColumnType("text");
 
-                    b.Property<bool>("InStock")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)

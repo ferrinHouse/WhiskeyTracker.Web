@@ -42,6 +42,13 @@ public class IndexModel : PageModel
     public bool ShowOnlyMyCollection { get; set; }
 
     [BindProperty(SupportsGet = true)]
+    public int? CollectionId { get; set; }
+
+    public SelectList? Collections { get; set; }
+
+    public HashSet<int> InStockWhiskeyIds { get; set; } = new();
+
+    [BindProperty(SupportsGet = true)]
     public string? SortOrder { get; set; }
 
     public string BrandSort { get; set; } = string.Empty;
@@ -55,8 +62,9 @@ public class IndexModel : PageModel
                !string.IsNullOrEmpty(WhiskeyRegion) || 
                !string.IsNullOrEmpty(WhiskeyType) || 
                !string.IsNullOrEmpty(WhiskeyBrand) || 
-               Statuses.Any() || 
-               ShowOnlyMyCollection;
+               Statuses.Any() ||
+               ShowOnlyMyCollection ||
+               CollectionId.HasValue;
     }
 
     public async Task OnGetAsync()
@@ -68,6 +76,25 @@ public class IndexModel : PageModel
         {
             await _legacyMigrationService.EnsureUserHasCollectionAsync(userId);
         }
+
+        var myCollections = string.IsNullOrEmpty(userId)
+            ? new List<Collection>()
+            : await _context.CollectionMembers
+                .Where(cm => cm.UserId == userId)
+                .Select(cm => cm.Collection)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+        var myCollectionIds = myCollections.Select(c => c.Id).ToList();
+
+        if (CollectionId.HasValue && !myCollectionIds.Contains(CollectionId.Value))
+        {
+            CollectionId = null;
+        }
+        Collections = new SelectList(myCollections, nameof(Collection.Id), nameof(Collection.Name), CollectionId);
+
+        // Stock is judged only against collections the user can access: the selected one, or all of theirs.
+        var scopeCollectionIds = CollectionId.HasValue ? new List<int> { CollectionId.Value } : myCollectionIds;
+        InStockWhiskeyIds = await _context.GetInStockWhiskeyIdsAsync(scopeCollectionIds);
 
         BrandSort = string.IsNullOrEmpty(SortOrder) || SortOrder == "Brand" ? "brand_desc" : "Brand";
         NameSort = SortOrder == "Name" ? "name_desc" : "Name";
@@ -122,15 +149,10 @@ public class IndexModel : PageModel
             whiskies = whiskies.Where(x => x.Brand == WhiskeyBrand);
         }
 
-        if (ShowOnlyMyCollection || Statuses.Any())
+        if (ShowOnlyMyCollection || CollectionId.HasValue || Statuses.Any())
         {
-            var myCollectionIds = await _context.CollectionMembers
-                .Where(cm => cm.UserId == userId)
-                .Select(cm => cm.CollectionId)
-                .ToListAsync();
-
             var ownedWhiskeyIdsQuery = _context.Bottles
-                .Where(b => b.CollectionId.HasValue && myCollectionIds.Contains(b.CollectionId.Value))
+                .Where(b => b.CollectionId.HasValue && scopeCollectionIds.Contains(b.CollectionId.Value))
                 .AsQueryable();
 
             if (Statuses.Any())
