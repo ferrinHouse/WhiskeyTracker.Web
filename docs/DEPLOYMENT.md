@@ -17,7 +17,7 @@ On every push to `main`, CI:
 3.  On the self-hosted runner, checks for pending EF migrations and, if there are any, dumps the database to `/app/backups` on the NFS backup share **before** the new version starts (the app applies migrations on startup).
 4.  Applies the manifests with the image tag set to the commit SHA and waits for the rollout (`kubectl rollout status`). The old pod keeps serving until the new one passes its readiness probe, and the job fails if it never does.
 
-The pod prefers arm64 nodes but can run on any node. Every node that can run it needs `nfs-common` installed for the photo volume.
+The pod has no node constraints and can run on any node, arm64 or amd64. Every node needs `nfs-common` installed for the photo volume.
 
 To roll back, run `kubectl rollout undo deployment/whiskey-web`, or re-run the pipeline for an earlier commit. Note that database migrations are not reversed.
 
