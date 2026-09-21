@@ -14,17 +14,7 @@ spec:
       labels:
         app: whiskey-tracker
     spec:
-      # The image is multi-arch, so it can run anywhere. Prefer the arm64 Pis, but
-      # allow the amd64 node as a fallback.
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/arch
-                    operator: In
-                    values: ["arm64"]
+      # No node constraints: the image is multi-arch (amd64 + arm64), so the pod can run on any node.
       securityContext:
         fsGroup: 1654
       containers:
