@@ -14,21 +14,39 @@ spec:
       labels:
         app: whiskey-tracker
     spec:
-      # CI publishes linux-arm64 binaries; keep the pod off any amd64 nodes in the cluster.
-      nodeSelector:
-        kubernetes.io/arch: arm64
+      # The image is multi-arch, so it can run anywhere. Prefer the arm64 Pis, but
+      # allow the amd64 node as a fallback.
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values: ["arm64"]
       securityContext:
         fsGroup: 1654
       containers:
         - name: whiskey-web
-          # Generic ASP.NET Core Runtime
-          image: mcr.microsoft.com/dotnet/aspnet:10.0
-          imagePullPolicy: Always
-          # Run the compiled DLL from the volume
-          command: ["dotnet", "WhiskeyTracker.Web.dll"]
-          workingDir: /app
+          # CI overrides this tag with the commit SHA at deploy time (see .github/workflows/ci.yml).
+          # "latest" is only used for manual applies.
+          image: ghcr.io/ferrinhouse/whiskeytracker.web:latest
           ports:
             - containerPort: 8080
+          # Database migrations run at startup, before the app listens, so allow time for them.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health
@@ -49,14 +67,9 @@ spec:
             - secretRef:
                 name: whiskey-secrets
           volumeMounts:
-            - mountPath: /app
-              name: app-storage
             - mountPath: /app/wwwroot/images
               name: photo-storage
       volumes:
-        - name: app-storage
-          persistentVolumeClaim:
-            claimName: whiskey-app-pvc
         - name: photo-storage
           persistentVolumeClaim:
             claimName: whiskey-photos-pvc

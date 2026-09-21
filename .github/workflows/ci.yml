@@ -7,29 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # 1. BUILD BINARIES
-  build-binaries:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 10.0.x
-
-    - name: Publish (Targeting Linux ARM64)
-      run: dotnet publish WhiskeyTracker.Web/WhiskeyTracker.Web.csproj -c Release -r linux-arm64 --self-contained false -o ./publish
-
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-binaries
-        path: ./publish
-        retention-days: 1
-
-  # 2. RUN TESTS
+  # 1. RUN TESTS
   test:
     runs-on: ubuntu-latest
     services:
@@ -52,7 +30,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
-    
+
     - name: Test
       run: dotnet test
       env:
@@ -60,7 +38,7 @@ jobs:
         Database__ConnectionString: "Host=localhost;Database=whiskey_test_db;Username=postgres;Password=whiskeypass"
         Database__SeedOnStartup: true
 
-  # 3. BUILD MULTI-ARCH CONTAINER IMAGE (pushed to GHCR on main; build-only on PRs)
+  # 2. BUILD MULTI-ARCH CONTAINER IMAGE (pushed to GHCR on main; build-only on PRs)
   build-image:
     runs-on: ubuntu-latest
     needs: [test]
@@ -102,64 +80,35 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-  # 4. DEPLOY TO PI CLUSTER
+  # 3. DEPLOY TO PI CLUSTER
   deploy:
     runs-on: self-hosted
-    needs: [build-binaries, test]
+    needs: [test, build-image]
     if: github.ref == 'refs/heads/main'
+    # Never let two deploys overlap (they share the db-backup pod and the rollout).
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Download Artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: app-binaries
-        path: ./publish
-
     - name: Inject Secrets
       run: |
         echo "${{ secrets.SECRETS_ENV_FILE }}" > k8s/.env
-      
-    - name: Apply Infrastructure
-      run: kubectl apply -k k8s/
-
-    - name: Start Loader Pod
-      run: |
-        cat <<EOF | kubectl apply -f -
-        apiVersion: v1
-        kind: Pod
-        metadata:
-          name: content-loader
-        spec:
-          containers:
-          - name: loader
-            image: debian:stable-slim  # GNU tar avoids a kubectl cp hang seen with BusyBox/Alpine tar
-            command: ["sleep", "3600"]
-            volumeMounts:
-            - mountPath: /app
-              name: app-storage
-          volumes:
-          - name: app-storage
-            persistentVolumeClaim:
-              claimName: whiskey-app-pvc
-        EOF
-        
-        echo "Waiting for loader pod..."
-        kubectl wait --for=condition=Ready pod/content-loader --timeout=60s
 
     - name: Check for Pending Migrations
       id: check_migrations
       run: |
         # Get latest from DB
         DB_MIGRATION=$(kubectl exec deployment/postgres -- psql -U postgres -d whiskey_prod -t -c 'SELECT "MigrationId" FROM "__EFMigrationsHistory" ORDER BY "MigrationId" DESC LIMIT 1;' | xargs)
-        
-        # Get latest from code
-        LOCAL_MIGRATION=$(find WhiskeyTracker.Web/Migrations -name "[0-9]*.cs" | sort | tail -n 1 | xargs basename -s .cs)
-        
+
+        # Get latest from code (ignore the generated .Designer.cs companions)
+        LOCAL_MIGRATION=$(find WhiskeyTracker.Web/Migrations -name "[0-9]*.cs" ! -name "*.Designer.cs" | sort | tail -n 1 | xargs basename -s .cs)
+
         echo "Database latest: $DB_MIGRATION"
         echo "Local code latest: $LOCAL_MIGRATION"
-        
+
         if [ "$DB_MIGRATION" != "$LOCAL_MIGRATION" ]; then
           echo "HAS_NEW_MIGRATIONS=true" >> $GITHUB_OUTPUT
           echo "New migration detected: $LOCAL_MIGRATION"
@@ -169,40 +118,65 @@ jobs:
         fi
       continue-on-error: true
 
+    # The app runs migrations on startup, so back the database up BEFORE rolling out the new image.
+    # The dump goes to /app/backups on the app NFS volume, which is now used only for backups.
     - name: Backup Database
       if: steps.check_migrations.outputs.HAS_NEW_MIGRATIONS == 'true'
       run: |
+        set -o pipefail
+        cat <<EOF | kubectl apply -f -
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: db-backup
+        spec:
+          nodeSelector:
+            kubernetes.io/arch: arm64
+          containers:
+          - name: backup
+            image: debian:stable-slim
+            command: ["sleep", "600"]
+            volumeMounts:
+            - mountPath: /app
+              name: app-storage
+          volumes:
+          - name: app-storage
+            persistentVolumeClaim:
+              claimName: whiskey-app-pvc
+        EOF
+        kubectl wait --for=condition=Ready pod/db-backup --timeout=60s
+
         TIMESTAMP=$(date +%Y%m%d_%H%M%S)
         echo "Streaming backup from DB pod to App PVC (/app/backups)..."
-        # Ensure directory exists on PVC
-        kubectl exec content-loader -- mkdir -p /app/backups
-        # Stream pg_dump through runner into PVC
+        kubectl exec db-backup -- mkdir -p /app/backups
         kubectl exec deployment/postgres -- pg_dump -U postgres whiskey_prod | \
-          kubectl exec -i content-loader -- sh -c "cat > /app/backups/whiskey_prod_$TIMESTAMP.sql"
+          kubectl exec -i db-backup -- sh -c "cat > /app/backups/whiskey_prod_$TIMESTAMP.sql"
         # Keep last 7 days of backups on PVC
-        kubectl exec content-loader -- find /app/backups -name "*.sql" -mtime +7 -delete
+        kubectl exec db-backup -- find /app/backups -name "*.sql" -mtime +7 -delete
       continue-on-error: true
 
-    - name: Copy Files to NFS
-      timeout-minutes: 6
-      run: |
-        # Clear existing files EXCEPT the backups directory
-        timeout 60 kubectl exec content-loader -- find /app -mindepth 1 -maxdepth 1 ! -name 'backups' -exec rm -rf {} +
-
-        # Copy new files (raw tar-over-exec instead of kubectl cp, which hangs on
-        # this cluster after a successful transfer - see PR history for #262/#263).
-        # The runner ("kubePrime") runs on the same Pi as the k3s control plane,
-        # so this can be genuinely slow under contention rather than truly stuck -
-        # a manual run against an idle cluster completed in ~22s, so 3 minutes
-        # gives real headroom without masking an actual hang for too long.
-        timeout 180 sh -c "tar cf - -C ./publish . | kubectl exec -i content-loader -- tar xf - -C /app"
-
-        # Verify (best-effort; the copy above is what actually matters)
-        timeout 60 kubectl exec content-loader -- ls -la /app || echo "Verification listing timed out, but files were copied above."
-
-    - name: Cleanup Loader
+    - name: Cleanup Backup Pod
       if: always()
-      run: kubectl delete pod content-loader --ignore-not-found
+      run: kubectl delete pod db-backup --ignore-not-found
 
-    - name: Restart Deployment
-      run: kubectl rollout restart deployment/whiskey-web
+    - name: Set Image Tag
+      run: |
+        cat >> k8s/kustomization.yaml <<EOF
+
+        images:
+          - name: ghcr.io/ferrinhouse/whiskeytracker.web
+            newTag: sha-${{ github.sha }}
+        EOF
+
+    - name: Apply Manifests
+      run: kubectl apply -k k8s/
+
+    - name: Wait for Rollout
+      run: kubectl rollout status deployment/whiskey-web --timeout=300s
+
+    - name: Show Pod State on Failure
+      if: failure()
+      run: |
+        kubectl get pods -o wide
+        kubectl describe pods -l app=whiskey-tracker | tail -40
+        kubectl logs -l app=whiskey-tracker --tail=100 --prefix || true
