@@ -26,7 +26,7 @@ public class EmailSender : IEmailSender
         var senderEmail = emailSettings["SenderEmail"] ?? "noreply@whiskeytracker.com";
         var senderName = emailSettings["SenderName"] ?? "Whiskey Tracker";
 
-        if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(user))
+        if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass))
         {
             _logger.LogWarning("Email sending skipped: EmailSettings not configured.");
             return;
