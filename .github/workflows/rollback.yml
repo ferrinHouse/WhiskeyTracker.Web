@@ -1,0 +1,50 @@
+name: Rollback Deployment (Blue/Green)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "rollback" to confirm flipping live traffic back to the previous slot'
+        required: true
+
+jobs:
+  rollback:
+    runs-on: self-hosted
+    if: github.event.inputs.confirm == 'rollback'
+    # Shares the deploy group so a rollback can never race an in-flight deploy.
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    steps:
+      - name: Determine Current/Target Slot
+        id: slot
+        run: |
+          ACTIVE_SLOT=$(kubectl get service whiskey-service -o jsonpath='{.spec.selector.slot}')
+          if [ "$ACTIVE_SLOT" = "blue" ]; then TARGET_SLOT=green; else TARGET_SLOT=blue; fi
+          echo "Currently live: $ACTIVE_SLOT — rolling back to: $TARGET_SLOT"
+          echo "active=$ACTIVE_SLOT" >> "$GITHUB_OUTPUT"
+          echo "target=$TARGET_SLOT" >> "$GITHUB_OUTPUT"
+
+      - name: Scale Up Target Slot
+        run: |
+          kubectl scale deployment/whiskey-web-${{ steps.slot.outputs.target }} --replicas=1
+          kubectl rollout status deployment/whiskey-web-${{ steps.slot.outputs.target }} --timeout=300s
+
+      - name: Health-Check Target Slot Before Flip
+        run: |
+          POD=$(kubectl get pods -l app=whiskey-tracker,slot=${{ steps.slot.outputs.target }} \
+            -o jsonpath='{.items[0].metadata.name}')
+          kubectl exec "$POD" -- wget -qO- --timeout=5 http://localhost:8080/health
+
+      - name: Flip Traffic Back
+        run: |
+          kubectl patch service whiskey-service -p \
+            '{"spec":{"selector":{"app":"whiskey-tracker","slot":"${{ steps.slot.outputs.target }}"}}}'
+          echo "Rolled back: live traffic now on slot ${{ steps.slot.outputs.target }}"
+
+      - name: Scale Down Slot We Just Left
+        run: kubectl scale deployment/whiskey-web-${{ steps.slot.outputs.active }} --replicas=0
+
+      - name: Show Pod State on Failure
+        if: failure()
+        run: kubectl get pods -o wide

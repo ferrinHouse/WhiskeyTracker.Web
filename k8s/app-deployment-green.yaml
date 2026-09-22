@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whiskey-web-green
+  labels:
+    app: whiskey-tracker
+    slot: green
+spec:
+  # `replicas` is deliberately NOT set here. CI and the rollback workflow own
+  # replica count directly via `kubectl scale` — if this field were set,
+  # every `kubectl apply` (which does a full-value replace, not a merge)
+  # would silently reset it back to whatever's checked into git, undoing any
+  # live scale/flip. This is the standard pattern for any Deployment whose
+  # replica count is managed imperatively (the same reason it's recommended
+  # for HPA-scaled Deployments). See docs/DEPLOYMENT.md for the one-time
+  # bootstrap step that sets the initial replica counts.
+  selector:
+    matchLabels:
+      app: whiskey-tracker
+      slot: green
+  template:
+    metadata:
+      labels:
+        app: whiskey-tracker
+        slot: green
+    spec:
+      # No node constraints: the image is multi-arch (amd64 + arm64), so the pod can run on any node.
+      securityContext:
+        fsGroup: 1654
+      containers:
+        - name: whiskey-web
+          # CI pins this to a specific commit SHA for the idle slot at deploy time
+          # (see .github/workflows/ci.yml). "latest" is only used for manual applies.
+          image: ghcr.io/ferrinhouse/whiskeytracker.web:latest
+          ports:
+            - containerPort: 8080
+          # Database migrations run at startup, before the app listens, so allow time for them.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: Database__ConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: whiskey-secrets
+                  key: connection-string
+            - name: ASPNETCORE_URLS
+              value: "http://+:8080"
+          envFrom:
+            - secretRef:
+                name: whiskey-secrets
+          volumeMounts:
+            - mountPath: /app/wwwroot/images
+              name: photo-storage
+      volumes:
+        - name: photo-storage
+          persistentVolumeClaim:
+            claimName: whiskey-photos-pvc

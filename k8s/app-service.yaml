@@ -1,3 +1,16 @@
+# NOTE: this file is intentionally NOT listed in kustomization.yaml's
+# `resources:` and is never touched by the deploy pipeline's `kubectl apply -k`.
+#
+# `spec.selector.slot` is the blue/green flip point — CI and the rollback
+# workflow own it directly via `kubectl patch service whiskey-service ...`.
+# `kubectl apply` does a full-value replace on any field present in the
+# manifest, not a merge, so if this file were applied repeatedly, every
+# deploy would silently reset the selector back to `slot: blue`, undoing
+# whichever slot is actually live. This file exists only as documentation of
+# the Service's shape and as the one-time bootstrap manifest (see
+# docs/DEPLOYMENT.md) — apply it by hand once (`kubectl apply -f
+# k8s/app-service.yaml`) when first setting up the cluster, never again
+# afterwards.
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,6 +18,7 @@ metadata:
 spec:
   selector:
     app: whiskey-tracker
+    slot: blue
   type: NodePort
   ports:
     - protocol: TCP
