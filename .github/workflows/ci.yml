@@ -90,10 +90,8 @@ jobs:
       group: deploy
       cancel-in-progress: false
     steps:
-    # Pinned to v4 (unlike the other jobs above): v5+ needs the self-hosted
-    # runner on Actions Runner >= 2.327.1, which hasn't been confirmed yet.
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Inject Secrets
       run: |
