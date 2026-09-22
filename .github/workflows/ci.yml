@@ -80,15 +80,18 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-  # 3. DEPLOY TO PI CLUSTER
-  deploy:
+  # 3. DEPLOY NEW BUILD TO THE IDLE SLOT (fully automatic; never touches live traffic)
+  deploy-idle:
     runs-on: self-hosted
     needs: [test, build-image]
     if: github.ref == 'refs/heads/main'
-    # Never let two deploys overlap (they share the db-backup pod and the rollout).
+    # Never let two deploys/rollbacks overlap (they share the db-backup pod and slot state).
     concurrency:
       group: deploy
       cancel-in-progress: false
+    outputs:
+      active: ${{ steps.slot.outputs.active }}
+      idle: ${{ steps.slot.outputs.idle }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v7
@@ -157,20 +160,53 @@ jobs:
       if: always()
       run: kubectl delete pod db-backup --ignore-not-found
 
-    - name: Set Image Tag
+    - name: Determine Active/Idle Slot
+      id: slot
       run: |
-        cat >> k8s/kustomization.yaml <<EOF
+        ACTIVE_SLOT=$(kubectl get service whiskey-service -o jsonpath='{.spec.selector.slot}')
+        if [ "$ACTIVE_SLOT" = "blue" ]; then IDLE_SLOT=green; else IDLE_SLOT=blue; fi
+        ACTIVE_IMAGE=$(kubectl get deployment/whiskey-web-$ACTIVE_SLOT -o jsonpath='{.spec.template.spec.containers[0].image}')
+        echo "Active slot: $ACTIVE_SLOT (image: $ACTIVE_IMAGE) / deploying to: $IDLE_SLOT"
+        echo "active=$ACTIVE_SLOT" >> "$GITHUB_OUTPUT"
+        echo "idle=$IDLE_SLOT" >> "$GITHUB_OUTPUT"
+        echo "active_image=$ACTIVE_IMAGE" >> "$GITHUB_OUTPUT"
 
-        images:
-          - name: ghcr.io/ferrinhouse/whiskeytracker.web
-            newTag: sha-${{ github.sha }}
-        EOF
-
+    # Syncs shape only (env vars, probes, labels) for both slots. Does NOT touch
+    # replicas (omitted from git, see k8s/app-deployment-*.yaml) or the Service
+    # (excluded from this kustomization entirely, see k8s/app-service.yaml) —
+    # both are owned imperatively by the steps below, not by this apply.
     - name: Apply Manifests
       run: kubectl apply -k k8s/
 
-    - name: Wait for Rollout
-      run: kubectl rollout status deployment/whiskey-web --timeout=300s
+    - name: Pin Images
+      run: |
+        # kubectl apply just reset both Deployments' image to git's checked-in
+        # placeholder tag (a full-value replace, not a merge) — re-assert the
+        # active slot's image unchanged (no-op rollout) and set the idle slot
+        # to this build. This is what makes exactly one Deployment roll per deploy.
+        kubectl set image deployment/whiskey-web-${{ steps.slot.outputs.active }} \
+          whiskey-web=${{ steps.slot.outputs.active_image }}
+        kubectl set image deployment/whiskey-web-${{ steps.slot.outputs.idle }} \
+          whiskey-web=ghcr.io/ferrinhouse/whiskeytracker.web:sha-${{ github.sha }}
+
+    - name: Scale Up Idle Slot
+      run: kubectl scale deployment/whiskey-web-${{ steps.slot.outputs.idle }} --replicas=1
+
+    - name: Wait for Idle Slot Rollout
+      run: kubectl rollout status deployment/whiskey-web-${{ steps.slot.outputs.idle }} --timeout=300s
+
+    - name: Privately Health-Check Idle Slot
+      run: |
+        IDLE_POD=$(kubectl get pods -l app=whiskey-tracker,slot=${{ steps.slot.outputs.idle }} \
+          -o jsonpath='{.items[0].metadata.name}')
+        for i in $(seq 1 10); do
+          if kubectl exec "$IDLE_POD" -- wget -qO- --timeout=5 http://localhost:8080/health; then
+            echo "Health check passed."
+            break
+          fi
+          if [ "$i" -eq 10 ]; then echo "Health check failed after 10 attempts."; exit 1; fi
+          sleep 3
+        done
 
     - name: Show Pod State on Failure
       if: failure()
@@ -178,3 +214,34 @@ jobs:
         kubectl get pods -o wide
         kubectl describe pods -l app=whiskey-tracker | tail -40
         kubectl logs -l app=whiskey-tracker --tail=100 --prefix || true
+
+  # 4. FLIP LIVE TRAFFIC TO THE NEW SLOT (paused for manual approval)
+  #
+  # Requires a one-time repo setup step: Settings > Environments > New environment
+  # named "production-flip", with yourself added under Required reviewers. Until
+  # that exists, this job runs immediately with no gate.
+  #
+  # While this job is waiting, test the idle slot for real before approving:
+  #   kubectl port-forward deployment/whiskey-web-<idle-slot> 8081:8080
+  # then browse http://localhost:8081 — this hits the real new build against the
+  # real database, with zero public traffic exposure, before you decide.
+  flip-traffic:
+    runs-on: self-hosted
+    needs: [deploy-idle]
+    environment: production-flip
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    steps:
+    - name: Flip Live Traffic to New Slot
+      run: |
+        kubectl patch service whiskey-service -p \
+          '{"spec":{"selector":{"app":"whiskey-tracker","slot":"${{ needs.deploy-idle.outputs.idle }}"}}}'
+        echo "Live traffic now on slot: ${{ needs.deploy-idle.outputs.idle }}"
+
+    - name: Scale Down Old Slot
+      run: kubectl scale deployment/whiskey-web-${{ needs.deploy-idle.outputs.active }} --replicas=0
+
+    - name: Show Pod State on Failure
+      if: failure()
+      run: kubectl get pods -o wide
