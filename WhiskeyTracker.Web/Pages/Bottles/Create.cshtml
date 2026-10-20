@@ -1,0 +1,137 @@
+@page
+@model WhiskeyTracker.Web.Pages.Bottles.CreateModel
+@{
+    ViewData["Title"] = "New Infinity Bottle";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-page="./Index">Infinity Bottles</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">New Infinity Bottle</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0"><span class="me-2">♾️</span> New Infinity Bottle</h4>
+                </div>
+                <div class="card-body p-4">
+                    @if (Model.Collections == null || !Model.Collections.Any())
+                    {
+                        <div class="alert alert-warning mb-0">
+                            <h5><i class="bi bi-exclamation-triangle-fill me-2"></i> No Collections Found</h5>
+                            <p>You need to belong to at least one collection to create an Infinity Bottle.</p>
+                            <a asp-page="/Collections/Create" class="btn btn-primary">Create a Collection</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-4">
+                            Start a living blend in your collection. You will be able to pour leftover drams from any of your open bottles into this decanter and monitor its changing composition.
+                        </p>
+
+                        <form method="post">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" role="alert"></div>
+
+                            <!-- Collection Selection -->
+                            <div class="form-group mb-4">
+                                <label asp-for="Input.CollectionId" class="form-label fw-bold"></label>
+                                <select asp-for="Input.CollectionId" asp-items="Model.Collections" class="form-select"></select>
+                                <span asp-validation-for="Input.CollectionId" class="text-danger small"></span>
+                                <div class="form-text">Choose the collection where this infinity bottle belongs.</div>
+                            </div>
+
+                            <!-- New Whiskey Fields -->
+                            <div id="newWhiskeySection">
+                                <div class="row">
+                                    <div class="col-md-7 mb-3">
+                                        <label asp-for="Input.Name" class="form-label fw-bold"></label> <span class="text-danger">*</span>
+                                        <input asp-for="Input.Name" class="form-control" placeholder="e.g., Living Bourbon Solera, Highland Blend" />
+                                        <span asp-validation-for="Input.Name" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-5 mb-3">
+                                        <label asp-for="Input.Brand" class="form-label fw-bold"></label>
+                                        <input asp-for="Input.Brand" class="form-control" placeholder="e.g., Living Blend, Home Decanter" />
+                                        <span asp-validation-for="Input.Brand" class="text-danger small"></span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Input.Type" class="form-label fw-bold"></label>
+                                        <input asp-for="Input.Type" class="form-control" placeholder="e.g., Infinity Blend, Bourbon Blend" />
+                                        <span asp-validation-for="Input.Type" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Input.Region" class="form-label fw-bold"></label>
+                                        <input asp-for="Input.Region" class="form-control" placeholder="e.g., Multi-Region, Kentucky" />
+                                        <span asp-validation-for="Input.Region" class="text-danger small"></span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="Input.CopyImageFromWhiskeyId" class="form-label fw-bold"></label>
+                                    <select asp-for="Input.CopyImageFromWhiskeyId" asp-items="Model.ImageSourceWhiskies" class="form-select">
+                                        <option value="">-- No image --</option>
+                                    </select>
+                                    <span asp-validation-for="Input.CopyImageFromWhiskeyId" class="text-danger small"></span>
+                                    <div class="form-text">Optional. Copies only the bottle photo from a whiskey in your library; the blend stays a separate record.</div>
+                                </div>
+                            </div>
+
+                            <!-- Bottle Specs -->
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.CapacityMl" class="form-label fw-bold"></label> <span class="text-danger">*</span>
+                                    <div class="input-group">
+                                        <input asp-for="Input.CapacityMl" class="form-control" type="number" step="50" min="100" max="5000" />
+                                        <span class="input-group-text">ml</span>
+                                    </div>
+                                    <span asp-validation-for="Input.CapacityMl" class="text-danger small"></span>
+                                    <div class="form-text">Standard decanter is 750ml.</div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.CurrentVolumeMl" class="form-label fw-bold"></label> <span class="text-danger">*</span>
+                                    <div class="input-group">
+                                        <input asp-for="Input.CurrentVolumeMl" class="form-control" type="number" step="10" min="0" max="5000" />
+                                        <span class="input-group-text">ml</span>
+                                    </div>
+                                    <span asp-validation-for="Input.CurrentVolumeMl" class="text-danger small"></span>
+                                    <div class="form-text">Set to 0 if starting empty.</div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="Input.Status" class="form-label fw-bold"></label>
+                                    <select asp-for="Input.Status" class="form-select" asp-items="Html.GetEnumSelectList<WhiskeyTracker.Web.Data.BottleStatus>()"></select>
+                                    <span asp-validation-for="Input.Status" class="text-danger small"></span>
+                                    <div class="form-text">Must be 'Opened' to receive pours.</div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label asp-for="Input.Description" class="form-label fw-bold"></label>
+                                <textarea asp-for="Input.Description" class="form-control" rows="3" placeholder="Optional notes about the goal or rules for this infinity bottle (e.g., 'Only peated Islay malts' or 'Bourbons over 100 proof')."></textarea>
+                                <span asp-validation-for="Input.Description" class="text-danger small"></span>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="bi bi-check-lg me-1"></i> Create Infinity Bottle
+                                </button>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
