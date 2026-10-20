@@ -64,7 +64,7 @@ public class EditModel : PageModel
         {
             if (!Uri.TryCreate(GooglePhotoUrl, UriKind.Absolute, out var uri) ||
                 uri.Scheme != Uri.UriSchemeHttps ||
-                !(uri.Host.EndsWith(".googleusercontent.com") || uri.Host.EndsWith(".googleapis.com")))
+                !(uri.Host == "googleusercontent.com" || uri.Host.EndsWith(".googleusercontent.com") || uri.Host == "googleapis.com" || uri.Host.EndsWith(".googleapis.com")))
             {
                 ModelState.AddModelError("GooglePhotoUrl", "Invalid Google Photo URL. URL must use HTTPS and point to a trusted Google domain.");
                 return Page();

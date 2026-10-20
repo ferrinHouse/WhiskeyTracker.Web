@@ -17,3 +17,8 @@
 **Vulnerability:** The host-allowlist check on `GooglePhotoUrl` only validated the initial request URL. `HttpClient` follows HTTP redirects by default, so a redirect response from an allowed host (e.g. an open redirect on `googleusercontent.com`) could send the server's request to an unvalidated internal or external destination, bypassing the check entirely.
 **Learning:** Validating the initial URL is not sufficient when the HTTP client automatically follows redirects - the redirect target is never re-validated against the allowlist.
 **Prevention:** Disable automatic redirects (`new HttpClientHandler { AllowAutoRedirect = false }`) when fetching from a user-supplied, allowlist-validated URL, so any redirect response fails closed instead of being silently followed.
+
+## 2024-05-24 - SSRF Domain Validation Bypass via Subdomain Check
+**Vulnerability:** In `Create.cshtml.cs` and `Edit.cshtml.cs`, the SSRF check for Google photo URLs used `uri.Host.EndsWith(".googleusercontent.com")`. This validates valid subdomains but rejects the exact apex domain if it were requested, and if it omitted the leading dot (`EndsWith("googleusercontent.com")`), it would allow an attacker to bypass it using domains like `attackergoogleusercontent.com`.
+**Learning:** Using `EndsWith(".domain.com")` is good for subdomains but strictly excludes the apex domain. `EndsWith("domain.com")` without a dot allows bypasses.
+**Prevention:** Always check for an exact match (`uri.Host == "domain.com"`) AND a strict subdomain match (`uri.Host.EndsWith(".domain.com")`) when implementing domain allowlists in C#.
