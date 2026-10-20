@@ -47,6 +47,7 @@ builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AppDbContext>();
 builder.Services.AddScoped<WhiskeyTracker.Web.Services.CollectionViewModelService>();
 builder.Services.AddScoped<WhiskeyTracker.Web.Services.LegacyMigrationService>();
+builder.Services.AddScoped<WhiskeyTracker.Web.Services.InfinityBottleMigrationService>();
 // Email Service
 builder.Services.AddTransient<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, WhiskeyTracker.Web.Services.EmailSender>();
 // Authentication

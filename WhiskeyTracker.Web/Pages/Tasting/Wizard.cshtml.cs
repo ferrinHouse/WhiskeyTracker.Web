@@ -56,7 +56,7 @@ public class WizardModel : PageModel
     public List<Tag> AvailableTags { get; set; } = new();
 
     // GET: Prepares the page for viewing
-    public async Task<IActionResult> OnGetAsync(int sessionId, int? whiskeyId = null)
+    public async Task<IActionResult> OnGetAsync(int sessionId, int? whiskeyId = null, int? bottleId = null)
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId)) return RedirectToPage("/Account/Login");
@@ -83,6 +83,12 @@ public class WizardModel : PageModel
         if (whiskeyId.HasValue)
         {
             SelectedWhiskeyId = whiskeyId;
+        }
+
+        // Preselect a specific bottle (e.g. "Taste" from an infinity bottle) if the user can pour from it.
+        if (bottleId.HasValue && BottleOptions.Any(o => o.Value == bottleId.Value.ToString()))
+        {
+            SelectedBottleId = bottleId;
         }
 
         return Page();

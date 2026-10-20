@@ -68,4 +68,30 @@ public class CreateModel : PageModel
 
         return RedirectToPage("./Wizard", new { sessionId = session.Id, whiskeyId });
     }
+
+    /// Same as OnPostSingleAsync, but starts from one of the user's own bottles (e.g. an infinity
+    /// bottle) so the Wizard opens with that bottle preselected.
+    public async Task<IActionResult> OnPostSingleBottleAsync(int bottleId)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        var canAccess = await _context.Bottles
+            .AnyAsync(b => b.Id == bottleId &&
+                           _context.CollectionMembers.Any(m => m.UserId == userId && m.CollectionId == b.CollectionId));
+        if (!canAccess) return NotFound();
+
+        var now = _timeProvider.GetLocalNow();
+        var session = new TastingSession
+        {
+            UserId = userId,
+            Date = DateOnly.FromDateTime(now.Date),
+            Title = $"Quick Taste on {now:MMM dd, yyyy}",
+            JoinCode = Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()
+        };
+
+        _context.TastingSessions.Add(session);
+        await _context.SaveChangesAsync();
+
+        return RedirectToPage("./Wizard", new { sessionId = session.Id, bottleId });
+    }
 }

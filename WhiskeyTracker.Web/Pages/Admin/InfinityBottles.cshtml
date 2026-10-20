@@ -1,0 +1,83 @@
+@page
+@model WhiskeyTracker.Web.Pages.Admin.InfinityBottlesModel
+@{
+    ViewData["Title"] = "Infinity Bottle Migration";
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-page="/Admin/Index">Admin Dashboard</a></li>
+            <li class="breadcrumb-item active">Infinity Bottles</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Infinity Bottle Migration</h1>
+        @if (Model.SharedBottles.Any())
+        {
+            <form method="post" asp-page-handler="Migrate">
+                <button type="submit" class="btn btn-warning" onclick="return confirm('Give each listed infinity bottle its own whiskey record?');">
+                    Migrate @Model.SharedBottles.Count Bottle(s)
+                </button>
+            </form>
+        }
+    </div>
+
+    <p class="text-muted">
+        These infinity bottles share a whiskey record with another bottle. Migrating creates a new
+        "Living Blend" whiskey for each one, copies only the bottle image, and moves the bottle's
+        tasting notes to the new record. The original whiskey is left untouched.
+    </p>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            @TempData["Message"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Bottle</th>
+                        <th>Shared Whiskey</th>
+                        <th>Collection</th>
+                        <th>Shared With</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.SharedBottles.Any())
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">Nothing to migrate. Every infinity bottle has its own whiskey record.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var b in Model.SharedBottles)
+                        {
+                            <tr>
+                                <td><a asp-page="/Bottles/Infinity" asp-route-id="@b.BottleId">#@b.BottleId</a></td>
+                                <td>@b.Brand @b.WhiskeyName</td>
+                                <td>@(b.CollectionName ?? "-")</td>
+                                <td>@b.SharedWithBottleCount other bottle(s)</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
