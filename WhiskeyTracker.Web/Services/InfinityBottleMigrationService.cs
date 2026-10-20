@@ -3,8 +3,8 @@ using WhiskeyTracker.Web.Data;
 
 namespace WhiskeyTracker.Web.Services;
 
-/// Gives infinity bottles that share a Whiskey record with another bottle their own Whiskey,
-/// copying only the bottle image from the original.
+/// Gives infinity bottles their own Whiskey record, copying only the bottle image from the
+/// whiskey they currently point at.
 public class InfinityBottleMigrationService
 {
     private readonly AppDbContext _context;
@@ -24,14 +24,14 @@ public class InfinityBottleMigrationService
         public string Brand { get; set; } = string.Empty;
         public string? CollectionName { get; set; }
         public int SharedWithBottleCount { get; set; }
+        public bool IsShared => SharedWithBottleCount > 0;
     }
 
-    /// Infinity bottles whose Whiskey is also used by at least one other bottle.
-    public async Task<List<SharedInfinityBottle>> FindSharedAsync()
+    /// Every infinity bottle, with how many other bottles share its Whiskey record.
+    public async Task<List<SharedInfinityBottle>> FindAllAsync()
     {
         return await _context.Bottles
-            .Where(b => b.IsInfinityBottle &&
-                        _context.Bottles.Any(o => o.WhiskeyId == b.WhiskeyId && o.Id != b.Id))
+            .Where(b => b.IsInfinityBottle)
             .Select(b => new SharedInfinityBottle
             {
                 BottleId = b.Id,
@@ -45,13 +45,34 @@ public class InfinityBottleMigrationService
             .ToListAsync();
     }
 
-    /// Returns the number of infinity bottles that were given their own Whiskey.
+    /// Infinity bottles whose Whiskey is also used by at least one other bottle.
+    public async Task<List<SharedInfinityBottle>> FindSharedAsync()
+    {
+        return (await FindAllAsync()).Where(b => b.IsShared).ToList();
+    }
+
+    /// Gives one infinity bottle its own Whiskey, optionally under a new name.
+    /// Returns false if the bottle doesn't exist or isn't an infinity bottle.
+    public async Task<bool> MigrateBottleAsync(int bottleId, string? newName = null)
+    {
+        var exists = await _context.Bottles.AnyAsync(b => b.Id == bottleId && b.IsInfinityBottle);
+        if (!exists) return false;
+
+        await MigrateAsync(new[] { bottleId }, newName);
+        return true;
+    }
+
+    /// Migrates every shared infinity bottle. Returns how many were given their own Whiskey.
     public async Task<int> MigrateAsync()
     {
         var shared = await FindSharedAsync();
         if (shared.Count == 0) return 0;
 
-        var bottleIds = shared.Select(s => s.BottleId).ToList();
+        return await MigrateAsync(shared.Select(s => s.BottleId).ToList(), null);
+    }
+
+    private async Task<int> MigrateAsync(IReadOnlyCollection<int> bottleIds, string? newName)
+    {
         var bottles = await _context.Bottles
             .Include(b => b.Whiskey)
             .Where(b => bottleIds.Contains(b.Id))
@@ -77,7 +98,7 @@ public class InfinityBottleMigrationService
 
                 var blend = new Whiskey
                 {
-                    Name = source.Name,
+                    Name = string.IsNullOrWhiteSpace(newName) ? source.Name : newName.Trim(),
                     Brand = "Living Blend",
                     Type = "Infinity Blend",
                     Region = "Blend",

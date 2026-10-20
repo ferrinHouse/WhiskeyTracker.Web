@@ -2,6 +2,7 @@
 @model WhiskeyTracker.Web.Pages.Admin.InfinityBottlesModel
 @{
     ViewData["Title"] = "Infinity Bottle Migration";
+    var sharedCount = Model.Bottles.Count(b => b.IsShared);
 }
 
 <div class="container py-4">
@@ -14,20 +15,21 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Infinity Bottle Migration</h1>
-        @if (Model.SharedBottles.Any())
+        @if (sharedCount > 0)
         {
             <form method="post" asp-page-handler="Migrate">
-                <button type="submit" class="btn btn-warning" onclick="return confirm('Give each listed infinity bottle its own whiskey record?');">
-                    Migrate @Model.SharedBottles.Count Bottle(s)
+                <button type="submit" class="btn btn-warning" onclick="return confirm('Give every shared infinity bottle its own whiskey record?');">
+                    Migrate All Shared (@sharedCount)
                 </button>
             </form>
         }
     </div>
 
     <p class="text-muted">
-        These infinity bottles share a whiskey record with another bottle. Migrating creates a new
-        "Living Blend" whiskey for each one, copies only the bottle image, and moves the bottle's
-        tasting notes to the new record. The original whiskey is left untouched.
+        Migrating gives an infinity bottle its own "Living Blend" whiskey record, copies only the
+        bottle image, and moves that bottle's tasting notes to the new record. The original whiskey
+        and its other bottles are left untouched. "Shared" means other bottles use the same whiskey
+        record; the per-row button works for any infinity bottle, shared or not.
     </p>
 
     @if (TempData["Message"] != null)
@@ -52,27 +54,45 @@
                 <thead>
                     <tr>
                         <th>Bottle</th>
-                        <th>Shared Whiskey</th>
+                        <th>Current Whiskey</th>
                         <th>Collection</th>
-                        <th>Shared With</th>
+                        <th>Status</th>
+                        <th>New Whiskey Name</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @if (!Model.SharedBottles.Any())
+                    @if (!Model.Bottles.Any())
                     {
                         <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">Nothing to migrate. Every infinity bottle has its own whiskey record.</td>
+                            <td colspan="5" class="text-center py-4 text-muted">No infinity bottles found.</td>
                         </tr>
                     }
                     else
                     {
-                        @foreach (var b in Model.SharedBottles)
+                        @foreach (var b in Model.Bottles)
                         {
                             <tr>
                                 <td><a asp-page="/Bottles/Infinity" asp-route-id="@b.BottleId">#@b.BottleId</a></td>
                                 <td>@b.Brand @b.WhiskeyName</td>
                                 <td>@(b.CollectionName ?? "-")</td>
-                                <td>@b.SharedWithBottleCount other bottle(s)</td>
+                                <td>
+                                    @if (b.IsShared)
+                                    {
+                                        <span class="badge bg-warning text-dark">Shared with @b.SharedWithBottleCount</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Unshared</span>
+                                    }
+                                </td>
+                                <td>
+                                    <form method="post" asp-page-handler="MigrateOne" class="d-flex gap-2"
+                                          onsubmit="return confirm('Give this infinity bottle its own whiskey record?');">
+                                        <input type="hidden" name="bottleId" value="@b.BottleId" />
+                                        <input type="text" name="newName" class="form-control form-control-sm" value="@b.WhiskeyName" maxlength="100" />
+                                        <button type="submit" class="btn btn-sm btn-warning text-nowrap">Migrate</button>
+                                    </form>
+                                </td>
                             </tr>
                         }
                     }

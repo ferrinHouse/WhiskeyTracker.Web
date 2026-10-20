@@ -15,11 +15,28 @@ public class InfinityBottlesModel : PageModel
         _logger = logger;
     }
 
-    public List<InfinityBottleMigrationService.SharedInfinityBottle> SharedBottles { get; set; } = new();
+    public List<InfinityBottleMigrationService.SharedInfinityBottle> Bottles { get; set; } = new();
 
     public async Task OnGetAsync()
     {
-        SharedBottles = await _migration.FindSharedAsync();
+        Bottles = await _migration.FindAllAsync();
+    }
+
+    public async Task<IActionResult> OnPostMigrateOneAsync(int bottleId, string? newName)
+    {
+        try
+        {
+            TempData["Message"] = await _migration.MigrateBottleAsync(bottleId, newName)
+                ? "Infinity bottle now has its own whiskey record."
+                : "Infinity bottle not found.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Infinity bottle migration failed for bottle {BottleId}.", bottleId);
+            TempData["ErrorMessage"] = "The migration failed and was rolled back.";
+        }
+
+        return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostMigrateAsync()

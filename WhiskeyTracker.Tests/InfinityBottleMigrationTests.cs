@@ -156,4 +156,30 @@ public class InfinityBottleMigrationTests : TestBase
         Assert.IsType<NotFoundResult>(result);
         Assert.Empty(context.TastingSessions);
     }
+
+    [Fact]
+    public async Task MigrateBottle_UnsharedInfinityBottle_GetsNewWhiskeyWithGivenName()
+    {
+        using var context = GetInMemoryContext();
+
+        var redbreast = new Whiskey { Name = "Redbreast 12 Cask", Brand = "Redbreast", Distillery = "Midleton" };
+        context.Whiskies.Add(redbreast);
+        await context.SaveChangesAsync();
+        var infinity = new Bottle { WhiskeyId = redbreast.Id, IsInfinityBottle = true, Status = BottleStatus.Opened };
+        context.Bottles.Add(infinity);
+        await context.SaveChangesAsync();
+
+        var service = new InfinityBottleMigrationService(context, MockEnvironment(Path.GetTempPath()));
+
+        Assert.Empty(await service.FindSharedAsync());
+        Assert.Single(await service.FindAllAsync());
+
+        Assert.True(await service.MigrateBottleAsync(infinity.Id, "Irish Infinity Blend"));
+
+        var updated = await context.Bottles.Include(b => b.Whiskey).SingleAsync();
+        Assert.NotEqual(redbreast.Id, updated.WhiskeyId);
+        Assert.Equal("Irish Infinity Blend", updated.Whiskey!.Name);
+        Assert.Equal("Redbreast 12 Cask", (await context.Whiskies.FindAsync(redbreast.Id))!.Name);
+        Assert.False(await service.MigrateBottleAsync(9999));
+    }
 }
