@@ -1,26 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: whiskey-web
+  name: whiskey-web-blue
   labels:
     app: whiskey-tracker
+    slot: blue
 spec:
-  replicas: 1
+  # `replicas` is deliberately NOT set here. CI and the rollback workflow own
+  # replica count directly via `kubectl scale` — if this field were set,
+  # every `kubectl apply` (which does a full-value replace, not a merge)
+  # would silently reset it back to whatever's checked into git, undoing any
+  # live scale/flip. This is the standard pattern for any Deployment whose
+  # replica count is managed imperatively (the same reason it's recommended
+  # for HPA-scaled Deployments). See docs/DEPLOYMENT.md for the one-time
+  # bootstrap step that sets the initial replica counts.
   selector:
     matchLabels:
       app: whiskey-tracker
+      slot: blue
   template:
     metadata:
       labels:
         app: whiskey-tracker
+        slot: blue
     spec:
       # No node constraints: the image is multi-arch (amd64 + arm64), so the pod can run on any node.
       securityContext:
         fsGroup: 1654
       containers:
         - name: whiskey-web
-          # CI overrides this tag with the commit SHA at deploy time (see .github/workflows/ci.yml).
-          # "latest" is only used for manual applies.
+          # CI pins this to a specific commit SHA for the idle slot at deploy time
+          # (see .github/workflows/ci.yml). "latest" is only used for manual applies.
           image: ghcr.io/ferrinhouse/whiskeytracker.web:latest
           ports:
             - containerPort: 8080
