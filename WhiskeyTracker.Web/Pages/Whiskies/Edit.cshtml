@@ -34,7 +34,9 @@
                     </button>
                     <span class="text-muted small">or upload from device:</span>
                 </div>
-                <input type="file" asp-for="ImageUpload" class="form-control" accept="image/*" id="ImageUpload" onchange="clearGooglePhoto()" />
+                <input type="file" asp-for="ImageUpload" class="form-control" accept=".jpg,.jpeg,.png,.gif,.webp" id="ImageUpload" onchange="clearGooglePhoto()" />
+                <span asp-validation-for="ImageUpload" class="text-danger"></span>
+                <span asp-validation-for="GooglePhotoUrl" class="text-danger"></span>
                 <div id="googlePhotoPreviewContainer" class="mt-2 d-none">
                     <p class="mb-1 small text-success"><i class="bi bi-check-circle-fill me-1"></i> Google Photo Selected:</p>
                     <div class="position-relative d-inline-block">

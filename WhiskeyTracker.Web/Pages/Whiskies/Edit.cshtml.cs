@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using WhiskeyTracker.Web.Data;
+using WhiskeyTracker.Web.Services;
 
 namespace WhiskeyTracker.Web.Pages.Whiskies;
 
@@ -62,39 +63,43 @@ public class EditModel : PageModel
 
         if (!string.IsNullOrEmpty(GooglePhotoUrl) && !string.IsNullOrEmpty(GooglePhotoToken))
         {
-            if (!Uri.TryCreate(GooglePhotoUrl, UriKind.Absolute, out var uri) ||
-                uri.Scheme != Uri.UriSchemeHttps ||
-                !(uri.Host.EndsWith(".googleusercontent.com") || uri.Host.EndsWith(".googleapis.com")))
+            if (!ImageUploadValidator.IsAllowedGooglePhotoUrl(GooglePhotoUrl))
             {
                 ModelState.AddModelError("GooglePhotoUrl", "Invalid Google Photo URL. URL must use HTTPS and point to a trusted Google domain.");
                 return Page();
             }
 
-            using var handler = new HttpClientHandler { AllowAutoRedirect = false };
-            using var httpClient = new HttpClient(handler);
-            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GooglePhotoToken);
-            var response = await httpClient.GetAsync(GooglePhotoUrl);
-            if (response.IsSuccessStatusCode)
+            var imageBytes = await ImageUploadValidator.DownloadGooglePhotoAsync(GooglePhotoUrl, GooglePhotoToken);
+            if (imageBytes == null)
             {
-                var imageBytes = await response.Content.ReadAsByteArrayAsync();
-                var uniqueFileName = Guid.NewGuid().ToString() + ".jpg";
-                var uploadsFolder = Path.Combine(_environment.WebRootPath, "images");
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-                await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
-                
-                if (!string.IsNullOrEmpty(Whiskey.ImageFileName))
-                {
-                    var oldPath = Path.Combine(uploadsFolder, Whiskey.ImageFileName);
-                    if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
-                }
-
-                Whiskey.ImageFileName = uniqueFileName;
+                ModelState.AddModelError("GooglePhotoUrl", $"Could not download the Google Photo. It must be an image no larger than {ImageUploadValidator.MaxImageBytes / (1024 * 1024)} MB.");
+                return Page();
             }
+
+            var uniqueFileName = Guid.NewGuid().ToString() + ".jpg";
+            var uploadsFolder = Path.Combine(_environment.WebRootPath, "images");
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+            await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
+
+            if (!string.IsNullOrEmpty(Whiskey.ImageFileName))
+            {
+                var oldPath = Path.Combine(uploadsFolder, Whiskey.ImageFileName);
+                if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+            }
+
+            Whiskey.ImageFileName = uniqueFileName;
         }
         else if (ImageUpload != null)
         {
+            var uploadError = ImageUploadValidator.ValidateUpload(ImageUpload);
+            if (uploadError != null)
+            {
+                ModelState.AddModelError("ImageUpload", uploadError);
+                return Page();
+            }
+
             var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(ImageUpload.FileName);
             var uploadsFolder = Path.Combine(_environment.WebRootPath, "images");
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
