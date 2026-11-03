@@ -43,6 +43,10 @@ spec:
               port: 8080
             initialDelaySeconds: 15
             periodSeconds: 30
+          # Reserve memory so the scheduler accounts for the app on the small Pi nodes.
+          resources:
+            requests:
+              memory: "256Mi"
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: "Production"
