@@ -78,7 +78,7 @@ public class CreateModel : PageModel
 
         Collections = new SelectList(myCollections, nameof(Collection.Id), nameof(Collection.Name), Input.CollectionId);
 
-        var whiskies = await _context.Whiskies
+        var whiskies = await _context.Whiskies.Approved()
             .Where(w => w.ImageFileName != null)
             .OrderBy(w => w.Brand)
             .ThenBy(w => w.Name)

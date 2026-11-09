@@ -331,7 +331,7 @@ public class WizardModel : PageModel
             };
         }), "Id", "Text");
 
-        var whiskies = await _context.Whiskies
+        var whiskies = await _context.Whiskies.Approved()
             .OrderBy(w => w.Brand)
             .ThenBy(w => w.Name)
             .Select(w => new { w.Id, Text = $"{w.Brand} {w.Name}" })

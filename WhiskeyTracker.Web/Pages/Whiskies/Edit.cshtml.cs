@@ -127,7 +127,15 @@ public class EditModel : PageModel
         }
 
         // Tell the database that this entity has been modified
-        _context.Attach(Whiskey).State = EntityState.Modified;
+        var entry = _context.Attach(Whiskey);
+        entry.State = EntityState.Modified;
+
+        // These fields aren't on the edit form (and can't be bound), so keep the stored values.
+        entry.Property(w => w.Barcode).IsModified = false;
+        entry.Property(w => w.Source).IsModified = false;
+        entry.Property(w => w.SourceRef).IsModified = false;
+        entry.Property(w => w.Status).IsModified = false;
+        entry.Property(w => w.CreatedAt).IsModified = false;
 
         try
         {

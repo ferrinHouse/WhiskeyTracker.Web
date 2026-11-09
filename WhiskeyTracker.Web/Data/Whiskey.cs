@@ -1,8 +1,27 @@
 //WhiskeyTracker.Web/Data/Whiskey.cs
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace WhiskeyTracker.Web.Data;
+
+/// Where a whiskey definition came from.
+public enum WhiskeySource
+{
+    Manual = 0,
+    PhotoScan = 1,
+    Import = 2,
+    Mcp = 3
+}
+
+/// Review state of a whiskey definition. Only Approved whiskeys appear in the library and pickers;
+/// machine-sourced records start as Pending until an admin reviews them.
+public enum WhiskeyStatus
+{
+    Approved = 0,
+    Pending = 1,
+    Rejected = 2
+}
 
 public class Whiskey
 {
@@ -41,6 +60,31 @@ public class Whiskey
 
     [MaxLength(2000)]
     public string? GeneralNotes { get; set; }
+
+    // The fields below are set by the app (import service, SaveChanges), never bound from forms.
+    [MaxLength(32)]
+    [BindNever]
+    public string? Barcode { get; set; }
+
+    [BindNever]
+    public WhiskeySource Source { get; set; } = WhiskeySource.Manual;
+
+    [MaxLength(200)]
+    [BindNever]
+    public string? SourceRef { get; set; }
+
+    [BindNever]
+    public WhiskeyStatus Status { get; set; } = WhiskeyStatus.Approved;
+
+    /// Duplicate-detection key (brand|name|age, normalized). Kept current by AppDbContext.SaveChanges.
+    [MaxLength(300)]
+    [BindNever]
+    [ValidateNever]
+    public string NormalizedKey { get; set; } = string.Empty;
+
+    /// Null for whiskeys created before this column existed.
+    [BindNever]
+    public DateTime? CreatedAt { get; set; }
 
     [ValidateNever]
     public List<Bottle> Bottles { get; set; } = new();

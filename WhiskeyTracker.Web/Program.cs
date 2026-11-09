@@ -48,6 +48,7 @@ builder.Services.AddDataProtection()
 builder.Services.AddScoped<WhiskeyTracker.Web.Services.CollectionViewModelService>();
 builder.Services.AddScoped<WhiskeyTracker.Web.Services.LegacyMigrationService>();
 builder.Services.AddScoped<WhiskeyTracker.Web.Services.InfinityBottleMigrationService>();
+builder.Services.AddScoped<WhiskeyImportService>();
 // Email Service
 builder.Services.AddTransient<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, WhiskeyTracker.Web.Services.EmailSender>();
 // Authentication
@@ -124,6 +125,13 @@ using (var scope = app.Services.CreateScope())
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
     await DbInitializer.Initialize(context, userManager, roleManager, builder.Configuration, seedSampleData, logger, env);
+
+    // Whiskeys saved before the NormalizedKey column existed need a key for duplicate detection.
+    var backfilled = await scope.ServiceProvider.GetRequiredService<WhiskeyImportService>().BackfillNormalizedKeysAsync();
+    if (backfilled > 0)
+    {
+        logger.LogInformation("Backfilled NormalizedKey for {Count} whiskeys", backfilled);
+    }
 }
 app.UseForwardedHeaders();
 // Fix for Kubernetes Ingress stripping X-Forwarded-Proto
