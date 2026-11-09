@@ -37,5 +37,52 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionK
         builder.Entity<Tag>()
             .HasIndex(t => t.Name)
             .IsUnique();
+
+        // Not unique yet: existing data may hold duplicates that need merging first.
+        builder.Entity<Whiskey>()
+            .HasIndex(w => w.NormalizedKey);
+
+        builder.Entity<Whiskey>()
+            .HasIndex(w => w.Barcode);
+
+        builder.Entity<Whiskey>()
+            .HasIndex(w => w.Status);
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        StampWhiskeys();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        StampWhiskeys();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// Keeps NormalizedKey in step with Brand/Name/Age and stamps CreatedAt on new whiskeys,
+    /// so every page and service that saves a Whiskey gets duplicate detection for free.
+    private void StampWhiskeys()
+    {
+        foreach (var entry in ChangeTracker.Entries<Whiskey>())
+        {
+            if (entry.State is not (EntityState.Added or EntityState.Modified)) continue;
+
+            var key = WhiskeyKey.For(entry.Entity);
+            if (entry.Entity.NormalizedKey != key)
+            {
+                entry.Entity.NormalizedKey = key;
+                if (entry.State == EntityState.Modified)
+                {
+                    entry.Property(w => w.NormalizedKey).IsModified = true;
+                }
+            }
+
+            if (entry.State == EntityState.Added && entry.Entity.CreatedAt == null)
+            {
+                entry.Entity.CreatedAt = DateTime.UtcNow;
+            }
+        }
     }
 }

@@ -51,7 +51,7 @@ public class CreateModel : PageModel
     /// scenes for a quick, single-pour tasting note and drops the user straight into the Wizard.
     public async Task<IActionResult> OnPostSingleAsync(int whiskeyId)
     {
-        var whiskeyExists = await _context.Whiskies.AnyAsync(w => w.Id == whiskeyId);
+        var whiskeyExists = await _context.Whiskies.Approved().AnyAsync(w => w.Id == whiskeyId);
         if (!whiskeyExists) return NotFound();
 
         var now = _timeProvider.GetLocalNow();

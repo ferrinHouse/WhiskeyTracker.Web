@@ -17,7 +17,7 @@ namespace WhiskeyTracker.Web.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.2")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -593,6 +593,10 @@ namespace WhiskeyTracker.Web.Migrations
                     b.Property<int?>("Age")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Barcode")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<string>("Brand")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -601,6 +605,9 @@ namespace WhiskeyTracker.Web.Migrations
                     b.Property<string>("CaskType")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Distillery")
                         .IsRequired()
@@ -619,10 +626,25 @@ namespace WhiskeyTracker.Web.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("NormalizedKey")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
                     b.Property<string>("Region")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceRef")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -630,6 +652,12 @@ namespace WhiskeyTracker.Web.Migrations
                         .HasColumnType("character varying(60)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Barcode");
+
+                    b.HasIndex("NormalizedKey");
+
+                    b.HasIndex("Status");
 
                     b.ToTable("Whiskies");
                 });

@@ -101,20 +101,20 @@ public class IndexModel : PageModel
         TypeSort = SortOrder == "Type" ? "type_desc" : "Type";
         RegionSort = SortOrder == "Region" ? "region_desc" : "Region";
         
-        IQueryable<string> genreQuery = _context.Whiskies
+        IQueryable<string> genreQuery = _context.Whiskies.Approved()
                                         .OrderBy(w => w.Region)
                                         .Select(w => w.Region)
                                         .Distinct();
         Regions = new SelectList(await genreQuery.ToListAsync());
 
-        IQueryable<string> typeQuery = _context.Whiskies
+        IQueryable<string> typeQuery = _context.Whiskies.Approved()
                                         .Where(w => !string.IsNullOrEmpty(w.Type))
                                         .OrderBy(w => w.Type)
                                         .Select(w => w.Type)
                                         .Distinct();
         Types = new SelectList(await typeQuery.ToListAsync());
 
-        IQueryable<string> brandQuery = _context.Whiskies
+        IQueryable<string> brandQuery = _context.Whiskies.Approved()
                                         .Where(w => !string.IsNullOrEmpty(w.Brand))
                                         .OrderBy(w => w.Brand)
                                         .Select(w => w.Brand)
@@ -123,7 +123,7 @@ public class IndexModel : PageModel
 
         // Show Whiskies that exist in the DB.
         // Option: Filter to only show whiskies I have? No, library mode usually shows all reference data.
-        IQueryable<Whiskey> whiskies = from w in _context.Whiskies
+        IQueryable<Whiskey> whiskies = from w in _context.Whiskies.Approved()
                                        orderby w.Brand, w.Name
                                        select w;
 
@@ -178,4 +178,4 @@ public class IndexModel : PageModel
 
         Whiskies = await whiskies.ToListAsync();
     }
-}
+}
