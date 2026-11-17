@@ -23,9 +23,11 @@ When asked to "ship this," "create a PR," or "save my work," you must follow thi
 4. **Create Branch:** Run `git switch -c <branch_name>`. (If branch exists, use `git switch <branch_name>`).
 
 ### Phase 2: Committing
-1. **Stage:** Run `git add .` (unless user specifies specific files).
-2. **Commit:** Generate a semantic commit message based on the changes (e.g., `feat: add user login`, `fix: resolve nav overlap`, `chore: update dependencies`).
-3. **Execute:** `git commit -m "<message>"`
+Goal: commit only the files that belong to this change.
+1. **Stage by name:** Run `git status --short`, then `git add <file> <file>`. Use `git add .` only if the user says "add everything".
+2. **Never stage:** `.github_token`, `.env` files, `*.log`, `*.sql` backups, `appsettings.Local*.json`, or anything under `bin/` or `obj/`. If one shows up as untracked, stop and tell the user.
+3. **Commit:** Generate a semantic commit message (e.g., `feat: add user login`, `fix: resolve nav overlap`, `chore: update dependencies`) and run `git commit -m "<message>"`.
+4. **Check:** `git show --stat HEAD` lists only the files this change touched. Do this before pushing.
 
 ### Phase 3: Pushing & PR
 1. **Push:** Run `git push -u origin <branch_name>`.
