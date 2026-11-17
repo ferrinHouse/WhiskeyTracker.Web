@@ -69,6 +69,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionK
         {
             if (entry.State is not (EntityState.Added or EntityState.Modified)) continue;
 
+            TrimTextFields(entry);
+
             var key = WhiskeyKey.For(entry.Entity);
             if (entry.Entity.NormalizedKey != key)
             {
@@ -84,5 +86,18 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionK
                 entry.Entity.CreatedAt = DateTime.UtcNow;
             }
         }
+    }
+
+    /// Trims the text fields the library filters on. Postgres treats "X" and "X " as different values,
+    /// so untrimmed input shows up as a duplicate option in the Brand/Type/Region dropdowns.
+    private static void TrimTextFields(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<Whiskey> entry)
+    {
+        var w = entry.Entity;
+        w.Brand = w.Brand?.Trim() ?? string.Empty;
+        w.Name = w.Name?.Trim() ?? string.Empty;
+        w.Distillery = w.Distillery?.Trim() ?? string.Empty;
+        w.Region = w.Region?.Trim() ?? string.Empty;
+        w.Type = w.Type?.Trim() ?? string.Empty;
+        w.CaskType = w.CaskType?.Trim();
     }
 }
