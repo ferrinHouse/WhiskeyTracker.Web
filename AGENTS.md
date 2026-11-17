@@ -11,11 +11,11 @@ Personal whiskey inventory and tasting journal. ASP.NET Core 10.0 Razor Pages, P
 - `k8s/` — Kubernetes manifests
 
 ## Workflow & Git Release Manager Rules
-When asked to "ship this," "create a PR," or "save my work," you must follow this strict sequence:
+When asked to "ship this," "create a PR," or "save my work," follow this sequence:
 
 ### Phase 1: Branching
 1. **Check Status:** Run `git status` to see what has changed and `git branch --show-current` to identify the current branch.
-2. **Main Branch Protection:** If the current branch is `main`, you **must** create a new branch. Direct commits to `main` are prohibited.
+2. **Main Branch Protection:** `main` is protected, so if you are on it, create a new branch first; never commit to `main` directly.
 3. **Branch Naming:**
    - specific feature? -> `feature/<brief-description>`
    - bug fix? -> `fix/<brief-description>`
@@ -31,21 +31,16 @@ When asked to "ship this," "create a PR," or "save my work," you must follow thi
 1. **Push:** Run `git push -u origin <branch_name>`.
 2. **Create PR:** Use the GitHub CLI.
    - Run: `gh pr create --fill`
-   - *Note:* `--fill` will auto-generate the title and body from your commit messages.
    - If `--fill` fails or is too vague, generate a title/body and run: `gh pr create --title "feat: <title>" --body "<summary>"`
 
-## Protocol: Testing & Quality
-1. **Always Consider Tests**: For every new feature or bug fix, evaluate if unit tests (in `WhiskeyTracker.Tests`) are required.
-2. **Planning Phase**: Every implementation plan **must** include a "Verification Plan" with both "Automated Tests" and "Manual Verification" sections.
-3. **Execution Phase**: Implement tests alongside the code. Ensure they follow established patterns.
-4. **Verification Phase**:
-   - Run `dotnet test` and report results.
-   - Perform manual verification using browser simulation/screenshots when UI changes are involved.
-   - Summarize all testing in your response or walkthrough document.
+## Testing & Quality
+For every feature or bug fix, decide whether unit tests are needed in `WhiskeyTracker.Tests`, and write them alongside the code following the existing patterns. Implementation plans include a "Verification Plan" with "Automated Tests" and "Manual Verification" sections.
+
+Before reporting work as done, run `dotnet test` and report the actual result; for UI changes, also check the affected page in the running app (browser simulation/screenshots). Summarize all testing in your response or walkthrough document.
 
 ## Error Handling
 - If `gh` commands fail due to auth, first check if the `.github_token` file exists in the root of the project. If it does, run the command with `$env:GH_TOKEN=$(cat .github_token);` prepended. If it still fails, stop and ask the user.
-- If there are merge conflicts, **stop** and ask the user for guidance.
+- If there are merge conflicts, stop and ask the user how to resolve them.
 
 ## What's Built vs. Planned
 **Implemented:** Whiskey library CRUD, bottle inventory, tasting wizard, tasting sessions, multi-user collections with invitations, infinity bottle tracking, admin dashboard, Google OAuth, role-based auth, image upload, search/filter.
