@@ -51,4 +51,37 @@ public class DetailsModel : PageModel
 
         return Page();
     }
+
+    public async Task<IActionResult> OnGetExportAsync(int id)
+    {
+        var userId = _userManager.GetUserId(User);
+        if (userId == null) return Challenge();
+
+        var collection = await _context.Collections.FirstOrDefaultAsync(c => c.Id == id);
+        if (collection == null) return NotFound();
+
+        var isMember = await _context.CollectionMembers.AnyAsync(m => m.CollectionId == id && m.UserId == userId);
+        if (!isMember) return Forbid();
+
+        var bottles = await _context.Bottles
+            .AsNoTracking()
+            .Include(b => b.Whiskey)
+            .Where(b => b.CollectionId == id)
+            .OrderBy(b => b.Whiskey!.Brand).ThenBy(b => b.Whiskey!.Name)
+            .ToListAsync();
+
+        var csv = Services.CollectionCsvExporter.Build(bottles);
+        var safeName = new string(collection.Name.Select(ch => char.IsLetterOrDigit(ch) ? ch : '-').ToArray()).Trim('-');
+        if (safeName.Length == 0) safeName = "collection";
+
+        // UTF-8 BOM so Excel reads accented characters correctly; single buffer, no LINQ copy.
+        var preamble = System.Text.Encoding.UTF8.GetPreamble();
+        var body = System.Text.Encoding.UTF8.GetBytes(csv);
+        var bytes = new byte[preamble.Length + body.Length];
+        Buffer.BlockCopy(preamble, 0, bytes, 0, preamble.Length);
+        Buffer.BlockCopy(body, 0, bytes, preamble.Length, body.Length);
+
+        var date = DateTime.UtcNow.ToString("yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture);
+        return File(bytes, "text/csv", $"{safeName}-{date}.csv");
+    }
 }
