@@ -16,6 +16,12 @@ public class DetailsModel : PageModel
 
     public Whiskey Whiskey { get; set; } = default!;
 
+    /// <summary>Average rating across every user's tasting notes, or null if nobody has rated it.</summary>
+    public double? GlobalAverageRating { get; set; }
+
+    /// <summary>Number of tasting notes (across all users) that make up the global average.</summary>
+    public int GlobalRatingCount { get; set; }
+
     public async Task<IActionResult> OnGetAsync(int? id)
     {
         if (id == null) return NotFound();
@@ -43,6 +49,13 @@ public class DetailsModel : PageModel
             .FirstOrDefaultAsync(m => m.Id == id);
 
         if (whiskey == null) return NotFound();
+
+        // Aggregate only (no note content), so other users' notes stay private.
+        var ratings = _context.TastingNotes.Where(n => n.WhiskeyId == whiskey.Id);
+        GlobalRatingCount = await ratings.CountAsync();
+        GlobalAverageRating = GlobalRatingCount > 0
+            ? await ratings.AverageAsync(n => (double)n.Rating)
+            : null;
 
         Whiskey = whiskey;
         return Page();
