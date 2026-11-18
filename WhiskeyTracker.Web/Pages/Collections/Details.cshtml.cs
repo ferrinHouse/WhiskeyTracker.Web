@@ -22,7 +22,37 @@ public class DetailsModel : PageModel
     public List<CollectionInvitation> PendingInvitations { get; set; } = new();
     public bool IsOwner { get; set; }
 
+    public Bottle? PickedBottle { get; set; }
+    public bool PickAttempted { get; set; }
+
     public async Task<IActionResult> OnGetAsync(int id)
+    {
+        return await LoadAsync(id);
+    }
+
+    // "Pick My Pour": suggests a random Full or Opened bottle from this collection.
+    public async Task<IActionResult> OnPostPickMyPourAsync(int id)
+    {
+        var result = await LoadAsync(id);
+        if (result is not PageResult) return result;
+
+        PickAttempted = true;
+        var eligible = _context.Bottles
+            .Where(b => b.CollectionId == id && b.Status != BottleStatus.Empty);
+        var count = await eligible.CountAsync();
+        if (count > 0)
+        {
+            PickedBottle = await eligible
+                .Include(b => b.Whiskey)
+                .OrderBy(b => b.Id)
+                .Skip(Random.Shared.Next(count))
+                .FirstAsync();
+        }
+
+        return Page();
+    }
+
+    private async Task<IActionResult> LoadAsync(int id)
     {
         var userId = _userManager.GetUserId(User);
         if (userId == null) return Challenge();
