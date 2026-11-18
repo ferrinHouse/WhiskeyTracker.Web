@@ -25,12 +25,15 @@ public class DetailsModel : PageModel
     public Bottle? PickedBottle { get; set; }
     public bool PickAttempted { get; set; }
 
+    /// <summary>Chooses an index in [0, count). Replaceable so tests can be deterministic.</summary>
+    public Func<int, int> NextIndex { get; set; } = Random.Shared.Next;
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
         return await LoadAsync(id);
     }
 
-    // "Pick My Pour": suggests a random Full or Opened bottle from this collection.
+    // "Pick My Pour": suggests a random usable bottle (not empty, volume > 0) from this collection.
     public async Task<IActionResult> OnPostPickMyPourAsync(int id)
     {
         var result = await LoadAsync(id);
@@ -38,15 +41,16 @@ public class DetailsModel : PageModel
 
         PickAttempted = true;
         var eligible = _context.Bottles
-            .Where(b => b.CollectionId == id && b.Status != BottleStatus.Empty);
+            .Where(b => b.CollectionId == id)
+            .Where(WhiskeyStockQueries.IsUsable);
         var count = await eligible.CountAsync();
         if (count > 0)
         {
             PickedBottle = await eligible
                 .Include(b => b.Whiskey)
                 .OrderBy(b => b.Id)
-                .Skip(Random.Shared.Next(count))
-                .FirstAsync();
+                .Skip(NextIndex(count))
+                .FirstOrDefaultAsync();
         }
 
         return Page();
