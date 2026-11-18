@@ -135,6 +135,57 @@ public static class DbInitializer
                 Type = "Blend", 
                 ABV = 0,
                 GeneralNotes = "The forever bottle. Constantly changing profile."
+            },
+
+            // Spelling variants, so the Admin "Clean Up Values" page has something to merge in dev.
+            // Mirrors what real data drifts into: brand with/without "Distillery", type with/without
+            // "Whiskey", apostrophe differences, and region suffixes.
+            new Whiskey
+            {
+                Name = "Bottled in Bond Bourbon",
+                Brand = "New Riff Distilling",
+                Distillery = "New Riff Distilling",
+                Region = "Kentucky",
+                Type = "Kentucky Straight Bourbon",
+                ABV = 50
+            },
+            new Whiskey
+            {
+                Name = "Single Barrel Bourbon",
+                Brand = "New Riff",
+                Distillery = "New Riff",
+                Region = "Kentucky, USA",
+                Type = "Kentucky Straight Bourbon Whiskey",
+                ABV = 55
+            },
+            new Whiskey
+            {
+                // Same name as the Buffalo Trace above: merging "Buffalo Trace Distillery" into
+                // "Buffalo Trace" shows the "will look like duplicates" warning.
+                Name = "Buffalo Trace",
+                Brand = "Buffalo Trace Distillery",
+                Distillery = "Buffalo Trace Distillery",
+                Region = "Kentucky",
+                Type = "Bourbon Whiskey",
+                ABV = 45
+            },
+            new Whiskey
+            {
+                Name = "Maker's Mark",
+                Brand = "Maker's Mark",
+                Distillery = "Maker's Mark",
+                Region = "Kentucky",
+                Type = "Kentucky Straight Bourbon",
+                ABV = 45
+            },
+            new Whiskey
+            {
+                Name = "Maker's Mark 46",
+                Brand = "Makers Mark",
+                Distillery = "Makers Mark",
+                Region = "Kentucky",
+                Type = "Kentucky Straight Bourbon Whiskey",
+                ABV = 47
             }
         };
 
