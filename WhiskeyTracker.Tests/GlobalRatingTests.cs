@@ -17,7 +17,8 @@ public class GlobalRatingTests : TestBase
         await context.SaveChangesAsync();
         context.TastingNotes.AddRange(
             new TastingNote { WhiskeyId = whiskey.Id, TastingSessionId = session.Id, UserId = "me", Rating = 5 },
-            new TastingNote { WhiskeyId = whiskey.Id, TastingSessionId = session.Id, UserId = "other", Rating = 3 });
+            new TastingNote { WhiskeyId = whiskey.Id, TastingSessionId = session.Id, UserId = "other", Rating = 3 },
+            new TastingNote { WhiskeyId = whiskey.Id, TastingSessionId = session.Id, UserId = "third", Rating = 4 });
         await context.SaveChangesAsync();
         context.ChangeTracker.Clear(); // mimic a fresh per-request context
 
@@ -26,7 +27,7 @@ public class GlobalRatingTests : TestBase
         await model.OnGetAsync(whiskey.Id);
 
         Assert.Equal(4.0, model.GlobalAverageRating);
-        Assert.Equal(2, model.GlobalRatingCount);
+        Assert.Equal(3, model.GlobalRatingCount);
         Assert.Single(model.Whiskey.TastingNotes); // only my own note is loaded
     }
 
@@ -47,6 +48,29 @@ public class GlobalRatingTests : TestBase
     }
 
     [Fact]
+    public async Task Details_GlobalAverage_IsHidden_BelowMinimumRatings()
+    {
+        using var context = GetInMemoryContext();
+        var whiskey = new Whiskey { Name = "Two Raters" };
+        var session = new TastingSession { Title = "Night" };
+        context.Whiskies.Add(whiskey);
+        context.TastingSessions.Add(session);
+        await context.SaveChangesAsync();
+        context.TastingNotes.AddRange(
+            new TastingNote { WhiskeyId = whiskey.Id, TastingSessionId = session.Id, UserId = "me", Rating = 5 },
+            new TastingNote { WhiskeyId = whiskey.Id, TastingSessionId = session.Id, UserId = "other", Rating = 3 });
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var model = new DetailsModel(context);
+        SetMockUser(model, "me");
+        await model.OnGetAsync(whiskey.Id);
+
+        Assert.Null(model.GlobalAverageRating);
+        Assert.Equal(2, model.GlobalRatingCount);
+    }
+
+    [Fact]
     public async Task Details_GlobalAverage_IgnoresOtherWhiskies()
     {
         using var context = GetInMemoryContext();
@@ -56,6 +80,8 @@ public class GlobalRatingTests : TestBase
         await context.SaveChangesAsync();
         context.TastingNotes.AddRange(
             new TastingNote { WhiskeyId = a.Id, UserId = "u1", Rating = 2 },
+            new TastingNote { WhiskeyId = a.Id, UserId = "u2", Rating = 2 },
+            new TastingNote { WhiskeyId = a.Id, UserId = "u3", Rating = 2 },
             new TastingNote { WhiskeyId = b.Id, UserId = "u1", Rating = 5 });
         await context.SaveChangesAsync();
 
@@ -64,6 +90,6 @@ public class GlobalRatingTests : TestBase
         await model.OnGetAsync(a.Id);
 
         Assert.Equal(2.0, model.GlobalAverageRating);
-        Assert.Equal(1, model.GlobalRatingCount);
+        Assert.Equal(3, model.GlobalRatingCount);
     }
 }
