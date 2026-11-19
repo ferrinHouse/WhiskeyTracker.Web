@@ -179,14 +179,22 @@
             <div class="mt-5">
                 <div class="d-flex justify-content-between align-items-center mb-3 bg-body-tertiary p-2 rounded">
                     <h3 class="h5 m-0">Tasting Journal</h3>
-                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
-                        @if (Model.Whiskey.TastingNotes.Any())
+                    <span>
+                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
+                            @if (Model.Whiskey.TastingNotes.Any())
+                            {
+                                <span>My Avg: @Model.Whiskey.TastingNotes.Average(n => n.Rating).ToString("0.0") ★</span>
+                            }
+                            else
+                            {
+                                <span>No Ratings Yet</span>
+                            }
+                        </span>
+                        @if (Model.GlobalAverageRating.HasValue)
                         {
-                            <span>Avg: @Model.Whiskey.TastingNotes.Average(n => n.Rating).ToString("0.0") ★</span>
-                        }
-                        else
-                        {
-                            <span>No Ratings Yet</span>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle" data-testid="global-rating">
+                                Global Avg: @Model.GlobalAverageRating.Value.ToString("0.0") ★ (@Model.GlobalRatingCount)
+                            </span>
                         }
                     </span>
                 </div>
