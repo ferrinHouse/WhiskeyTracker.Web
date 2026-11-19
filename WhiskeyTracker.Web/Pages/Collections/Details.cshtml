@@ -11,6 +11,7 @@
             <p class="text-muted">Collection Management</p>
         </div>
         <div>
+            <a asp-page="./Details" asp-page-handler="Export" asp-route-id="@Model.Collection.Id" class="btn btn-outline-primary"><i class="bi bi-download me-1"></i>Export CSV</a>
             <a asp-page="./Index" class="btn btn-outline-secondary">Back to List</a>
             @if (Model.IsOwner)
             {
